@@ -30,7 +30,18 @@ const Voice = (() => {
     src.buffer = decoded;
     src.connect(offline.destination);
     src.start();
-    const pcm = (await offline.startRendering()).getChannelData(0);
+    let pcm = (await offline.startRendering()).getChannelData(0);
+    // Trim leading/trailing silence and normalise loudness: quiet, padded mic
+    // clips are the main cause of mis-recognition.
+    let peak = 0;
+    for (const x of pcm) peak = Math.max(peak, Math.abs(x));
+    const thr = Math.max(0.01, peak * 0.08);
+    let a = pcm.findIndex((x) => Math.abs(x) > thr), b = pcm.length - 1;
+    while (b > a && Math.abs(pcm[b]) <= thr) b--;
+    if (a < 0) a = 0;
+    pcm = pcm.slice(Math.max(0, a - rate * 0.25), Math.min(pcm.length, b + rate * 0.35));
+    const gain = peak > 0 ? Math.min(8, 0.9 / peak) : 1;
+    pcm = pcm.map((x) => x * gain);
     const buf = new ArrayBuffer(44 + pcm.length * 2);
     const v = new DataView(buf);
     const str = (o, s) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
@@ -52,7 +63,7 @@ const Voice = (() => {
    */
   async function listen(onState = () => {}, maxWaitMs = 12000, language = null) {
     if (window.SAHAYAK_REPLAY) throw new Error("Voice runs on-device with Gemma 4. Clone the repo and run it locally.");
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: true } });
     const recorder = new MediaRecorder(stream);
     const chunks = [];
     recorder.ondataavailable = (e) => chunks.push(e.data);

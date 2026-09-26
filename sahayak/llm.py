@@ -17,6 +17,7 @@ and voice input: `transcribe()` sends recorded speech to Gemma 4's native
 audio encoder (no separate ASR model, no cloud).
 """
 
+import base64
 import json
 import re
 import time
@@ -133,9 +134,9 @@ TRANSCRIBE_PROMPT = (
     "not said, do not describe the audio, and do not answer or comment. If no clear speech is heard, output nothing."
 )
 LANG_HINT = {
-    "Telugu": " The speaker is most likely speaking Telugu (maybe mixed with English): write Telugu words in Telugu script (తెలుగు), never in English letters.",
-    "Hindi": " The speaker is most likely speaking Hindi (maybe mixed with English): write Hindi words in Devanagari (हिन्दी), never in English letters.",
-    "English": " The speaker is most likely speaking English (Indian accent).",
+    "Telugu": " The speaker may speak English, Telugu or a mix: write English words in English and Telugu words in Telugu script (తెలుగు), never Telugu in English letters.",
+    "Hindi": " The speaker may speak English, Hindi or a mix: write English words in English and Hindi words in Devanagari (हिन्दी), never Hindi in English letters.",
+    "English": " The speaker is most likely speaking English with an Indian accent; names are usually Indian names.",
 }
 # Signs that the model talked ABOUT the audio instead of transcribing it.
 _META = re.compile(r"(transcri|audio|recording|clip|write only|i'?m sorry|i cannot|i can'?t|no speech|not provided|speaker)", re.I)
@@ -145,6 +146,10 @@ def transcribe(wav_b64: str, language: str | None = None) -> tuple[str, str]:
     """Speech-to-text with Gemma 4 audio input. Returns (text, model). Raises LLMUnavailable."""
     if not _enabled:
         raise LLMUnavailable("local model disabled (simulated crash)")
+    try:  # keep the last clip on the device for debugging recognition problems
+        (config.DATA_DIR / "last_clip.wav").write_bytes(base64.b64decode(wav_b64))
+    except (OSError, ValueError):
+        pass
     last_err: Exception | None = None
     secs = max(0.5, (len(wav_b64) * 3 // 4 - 44) / 32000)  # 16 kHz mono 16-bit PCM
     for model in (config.PRIMARY_MODEL, config.FALLBACK_MODEL):
