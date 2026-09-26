@@ -29,14 +29,29 @@ An ASHA worker in rural Telangana sees a sick child at home. There is often no s
 ## Features
 
 ### Agent loop ([agent.py](sahayak/agent.py))
-- One tool per iteration, chosen by Gemma from a JSON-schema-constrained menu. Gemma sees a compact state view: note, vitals, findings, protocol flags, history, answers, plan, referral, step budget, and the checker's last feedback.
+- After the automatic SENSE phase, one tool per iteration is chosen by Gemma from a JSON-schema-constrained menu. The checker rejects repeated tools that make no progress, and the state includes an explicit `still_open` checklist, because small models otherwise repeat finished steps. Gemma sees a compact state view: note, vitals, findings, protocol flags, history, answers, plan, referral, step budget, and the checker's last feedback.
 - The loop ends on `finish` (approved by the checker), on `ask_health_worker` (status `needs_input`), or when the budget runs out (`MAX_STEPS`). Running out of budget produces a forced clinician handoff, never a guess.
 - **Degraded mode**: if Gemma is unreachable, returns invalid JSON after retries, or proposes rejected actions `MAX_CHECK_REJECTIONS` times, the loop switches to `rules_planner`, a deterministic policy that follows the same tools and checker.
 - **Crash-safe resume**: every step is persisted. `load_state()` replays the trace to rebuild working memory (for example, whether rules were checked after the latest findings or vitals change). `resume_interrupted()` restarts visits that were `running` at startup.
 
-### Sense ([tools.py](sahayak/tools.py) `extract_findings`)
-- Gemma extracts symptoms, allowed danger-sign codes, duration, and any vitals mentioned in the note (converting °F to °C), using a strict JSON schema.
-- **Keyword safety net**: English and Hinglish regexes run too, and any danger sign they find is unioned in, so a missed "behosh" cannot lower triage.
+### Sense ([agent.py](sahayak/agent.py) `_sense`, [tools.py](sahayak/tools.py) `extract_findings`)
+- The SENSE phase runs automatically at the start and whenever new information arrives (a free-text answer clears findings, and a new vital makes the rules stale). It reads the note, loads history, and applies the rules without spending a model decision. A RED sign therefore opens the emergency referral within seconds.
+- **Checklist extraction**: Gemma must give a yes/no/unclear verdict for each of the 15 danger signs, using plain-language definitions with local-language examples (`protocols.DANGER_SIGN_DEFS`), and must quote the evidence. It also lists present and ruled-out symptoms, duration, and vitals mentioned in the note. Unclear signs are shown to the planner as "worth asking about".
+- **Grounding check**: a "yes" whose quoted evidence is not actually in the note is downgraded to unclear.
+- **Negation-aware keyword net** (English, Hinglish, Devanagari, Telugu): it handles pre-negation ("no chest pain", "denies fever") and post-negation ("saans nahi phool rahi"). Its danger signs are always unioned in, so a model miss can't lower urgency.
+
+### Voice ([static/voice.js](sahayak/static/voice.js), `llm.transcribe`)
+- The browser records the mic, then resamples and encodes the clip as a 16 kHz mono PCM WAV. `/api/transcribe` sends it to Gemma 4 E4B's native audio input through Ollama and gets a verbatim transcript in the spoken language and script. The inline audio is stripped from the logs.
+- It is used for both the visit note and answers to the agent's questions. The keyword safety net also understands Devanagari and Telugu script, because voice transcripts can arrive in native script.
+- Read-aloud uses browser speech synthesis and prefers on-device voices (for example macOS Lekha for Hindi and Geeta for Telugu).
+
+### Measurement doubt and clarification ([protocols.py](sahayak/protocols.py))
+- Readings outside physiological ranges (for example temperature outside 32–43 °C or SpO₂ below 50) are **not** used for triage. They raise a YELLOW "unreliable reading" flag, and the agent must ask for a re-measure before finishing.
+- A vague note (at most one symptom, no danger sign, no duration) requires one clarifying question. The free-text answer triggers re-extraction.
+- Temperature bands: RED below 35.0 °C (hypothermia) or at 41 °C and above (hyperpyrexia), YELLOW for 35.0–35.9 °C or 39.5 °C and above.
+
+### Evaluation ([eval/](eval))
+18 labelled vignettes in English, Hinglish, and Telugu, run through the full agent with scripted worker answers, comparing Gemma against rules-only. The key metric is under-triage.
 
 ### Check ([checker.py](sahayak/checker.py), [protocols.py](sahayak/protocols.py))
 - `protocols.evaluate`: IMCI-inspired thresholds for SpO₂, temperature (including infants under 2 months), age-specific breathing rate, heart rate, BP (pregnancy-specific), plus danger signs. It returns flags and a minimum level.
@@ -63,5 +78,5 @@ Vanilla JS that polls the API every 1.2 s. It shows a colour-coded live trace (d
 
 ## Limitations and next steps
 - The protocol is a demo and not clinically validated. A real deployment needs clinician-reviewed IMCI/MCP rule sets.
-- Voice input with on-device ASR, and packaging for Android via LiteRT / MediaPipe LLM Inference.
+- Packaging for Android via LiteRT / MediaPipe LLM Inference (Gemma 4 E2B on phone), and streaming voice.
 - Encrypting the SQLite file at rest, and authenticated sync.

@@ -24,7 +24,7 @@ MAX_QUESTIONS = 3
 
 def unanswered(state: AgentState) -> list[dict]:
     """Critical missing vitals that have not already been asked about."""
-    asked = {a.get("field") for a in state.answers}
+    asked = {a.get("field") or "none" for a in state.answers}
     return [a for a in protocols.missing_critical(state.vitals, state.patient, state.findings)
             if a["field"] not in asked]
 
@@ -113,8 +113,10 @@ def postcheck(state: AgentState, tool: str, result: dict) -> dict:
         conf = state.plan.get("confidence")
         if conf is not None and conf < config.HANDOFF_CONFIDENCE and not state.referral:
             return {"ok": True, "force": "refer_to_clinician",
+                    "reason": f"Low model confidence ({conf:.2f}) on {state.plan.get('triage')} triage: clinician review. {state.plan.get('rationale', '')}",
                     "feedback": f"Model confidence {conf:.2f} < {config.HANDOFF_CONFIDENCE}: handing off to a clinician."}
     if tool == "check_danger_signs" and result["level"] == "RED" and not state.referral:
-        return {"ok": True, "force": "refer_to_clinician",
-                "feedback": "RED danger sign detected: emergency referral opened immediately, before any further reasoning."}
+        reasons = "; ".join(f["reason"] for f in result["flags"] if f["level"] == "RED")
+        return {"ok": True, "force": "refer_to_clinician", "reason": f"Emergency: {reasons}",
+                "feedback": f"RED danger sign ({reasons}): emergency referral opened immediately, before any further reasoning."}
     return {"ok": True, "feedback": ""}

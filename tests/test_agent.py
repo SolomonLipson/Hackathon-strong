@@ -36,8 +36,12 @@ class FakeGemma:
         self.findings = findings
 
     def __call__(self, system, user, schema, models=None):
-        if "extract clinical findings" in system:
-            return dict(self.findings), "fake-gemma"
+        if "clinical reader" in system:
+            f = dict(self.findings)
+            f["danger_sign_checklist"] = {s: "yes" for s in f.pop("danger_signs", [])}
+            f.setdefault("evidence", [])
+            f.setdefault("negated", [])
+            return f, "fake-gemma"
         tool, args = self.decisions.pop(0)
         return {"thought": "t", "tool": tool, "args": args}, "fake-gemma"
 
@@ -55,8 +59,7 @@ class AgentTests(unittest.TestCase):
         findings = {"symptoms": ["headache"], "danger_signs": ["severe_headache_blurred_vision"],
                     "duration_days": 1, "vitals_in_note": {}, "summary": "s"}
         llm.chat_json = FakeGemma([
-            ("extract_findings", {}),
-            ("check_danger_signs", {}),
+            ("extract_findings", {}),  # repeat of the auto-sensed step: rejected as no progress
             ("recommend_care", {"triage": "GREEN", "advice_steps": ["rest"], "confidence": 0.9}),  # unsafe
             ("recommend_care", {"triage": "RED", "advice_steps": ["go to hospital"], "confidence": 0.9}),
             ("finish", {"summary": "done"}),
@@ -84,7 +87,7 @@ class AgentTests(unittest.TestCase):
         def boom(*a, **k):
             raise llm.LLMUnavailable("down")
         llm.chat_json = boom
-        s = new_visit("mild fever since yesterday", {"temp_c": 38.0, "hr": 90, "rr": 18}, age_years=30, sex="M")
+        s = new_visit("mild fever and body ache since yesterday", {"temp_c": 38.0, "hr": 90, "rr": 18}, age_years=30, sex="M")
         status = agent.run(s)
         enc = store.get_encounter(s.encounter_id)
         self.assertEqual(status, "done")
@@ -101,7 +104,7 @@ class AgentTests(unittest.TestCase):
 
     def test_resume_rebuilds_state(self):
         llm.set_enabled(False)
-        s = new_visit("mild cough", {"temp_c": 37.2}, age_years=40)
+        s = new_visit("mild cough and runny nose for 2 days", {"temp_c": 37.2}, age_years=40)
         s.step = 1
         agent.TOOLS["extract_findings"](s, {})
         store.add_step(s.encounter_id, 1, "act", "extract_findings", {})
@@ -110,6 +113,36 @@ class AgentTests(unittest.TestCase):
         self.assertTrue(resumed.findings)
         self.assertIsNone(resumed.rules)
         self.assertEqual(agent.run(resumed), "done")
+
+    def test_vague_note_triggers_clarifying_question(self):
+        llm.set_enabled(False)
+        s = new_visit("not sure, but low energy", {"temp_c": 36.8, "hr": 80}, age_years=22, sex="M")
+        self.assertEqual(agent.run(s), "needs_input")
+        enc = store.get_encounter(s.encounter_id)
+        self.assertIn("other problems", enc["question"])
+        agent.answer(s.encounter_id, "since 3 days, vomiting and not eating", resume=False)
+        agent.run(agent.load_state(s.encounter_id))
+        enc = store.get_encounter(s.encounter_id)
+        self.assertIn("vomiting", enc["findings"]["symptoms"])
+        self.assertIn(enc["status"], ("done", "handoff"))
+
+    def test_implausible_vital_is_remeasured_not_trusted(self):
+        llm.set_enabled(False)
+        s = new_visit("low energy and weakness since yesterday", {"temp_c": 30.0, "hr": 80}, age_years=22, sex="M")
+        self.assertEqual(agent.run(s), "needs_input")
+        enc = store.get_encounter(s.encounter_id)
+        self.assertIn("looks wrong", enc["question"])
+        self.assertEqual(enc["handoffs"], [])  # no emergency referral from a bad reading
+        agent.answer(s.encounter_id, "98.2 F", resume=False)
+        agent.run(agent.load_state(s.encounter_id))
+        enc = store.get_encounter(s.encounter_id)
+        self.assertEqual(enc["vitals"]["temp_c"], 36.8)
+        self.assertEqual(enc["triage"], "GREEN")
+
+    def test_temperature_thresholds(self):
+        from sahayak import protocols
+        lvl = lambda t: protocols.evaluate({"temp_c": t}, {"age_years": 30}, {})["level"]
+        self.assertEqual([lvl(34.5), lvl(35.0), lvl(36.5), lvl(39.6), lvl(41.2)], ["RED", "YELLOW", "GREEN", "YELLOW", "RED"])
 
 
 if __name__ == "__main__":

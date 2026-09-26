@@ -1,11 +1,12 @@
 <!doctype html>
 <!--
   Sahayak UI: one page for the health worker.
-  Left: start a visit (with demo presets) and the visit list.
-  Middle: the live agent loop (sense/decide/act/check trace), the agent's
-  questions, and the final care plan.
-  Right: on-device status (model, simulated network, sync outbox) and the
-  clinician handoff queue. No external assets: works fully offline.
+  Left: start a visit (demo presets, voice or typed note, vitals) and the visit list.
+  Middle: the selected visit: live loop phase tracker, the agent's question,
+  the triage result with local-language advice, what Gemma understood
+  (findings, evidence, vitals), visit stats and the full step-by-step trace.
+  Right: the clinician handoff queue and the safety design.
+  No external assets: everything works fully offline.
 -->
 <html lang="en">
 <head>
@@ -16,12 +17,16 @@
 </head>
 <body>
 <header>
-  <div class="brand"><span class="logo">✚</span> Sahayak <small>offline triage agent · Gemma 4 on-device</small></div>
+  <div class="brand">
+    <span class="logo">✚</span>
+    <div><div class="name">Sahayak</div><div class="tag">Offline triage agent for community health workers · Gemma 4 on-device</div></div>
+  </div>
   <div class="pills">
+    <span class="pill ok" title="The agent, the model and all patient data stay on this device">🔒 Private · on-device</span>
     <span id="modelPill" class="pill">model …</span>
-    <button id="modelBtn" class="pill toggle" title="Simulate the local model crashing">Kill model</button>
     <button id="netBtn" class="pill toggle" title="Simulate connectivity">Offline</button>
     <span id="syncPill" class="pill">outbox …</span>
+    <button id="modelBtn" class="pill toggle ghost" title="Simulate the local model crashing">Kill model</button>
   </div>
 </header>
 
@@ -31,62 +36,99 @@
     <div class="presets" id="presets"></div>
     <form id="visitForm">
       <div class="row">
-        <label>Name<input name="name" required></label>
-        <label class="sm">Age (y)<input name="age_years" type="number" step="0.1" min="0" required></label>
+        <label>Name<input name="name" required placeholder="Patient name"></label>
+        <label class="sm">Age (years)<input name="age_years" type="number" step="0.01" min="0" required></label>
       </div>
       <div class="row">
         <label class="sm">Sex<select name="sex"><option>F</option><option>M</option></select></label>
         <label class="chk"><input type="checkbox" name="pregnant"> Pregnant</label>
-        <label class="sm">Advice language<select name="language"><option>Hindi</option><option>Telugu</option><option>English</option></select></label>
+        <label class="sm">Advice in<select name="language"><option>Hindi</option><option>Telugu</option><option>English</option></select></label>
       </div>
-      <label>Worker's note (any language)<textarea name="note" rows="4" required></textarea></label>
+      <label>What did you see and hear? <span class="hint">any language · speak or type</span>
+        <textarea name="note" rows="4" required placeholder="e.g. Bachchi ko 2 din se bukhar hai, kuch pee nahi rahi…"></textarea></label>
+      <button type="button" id="noteMic" class="mic">🎤 Speak the note</button>
+      <div class="vlabel">Vitals <span class="hint">leave blank if not measured</span></div>
       <div class="vitals">
         <label>Temp °C<input name="temp_c" type="number" step="0.1"></label>
-        <label>HR<input name="hr" type="number"></label>
-        <label>RR<input name="rr" type="number"></label>
-        <label>SpO₂<input name="spo2" type="number"></label>
-        <label>SBP<input name="sbp" type="number"></label>
-        <label>DBP<input name="dbp" type="number"></label>
+        <label>Pulse<input name="hr" type="number"></label>
+        <label>Breaths/min<input name="rr" type="number"></label>
+        <label>SpO₂ %<input name="spo2" type="number"></label>
+        <label>BP sys<input name="sbp" type="number"></label>
+        <label>BP dia<input name="dbp" type="number"></label>
       </div>
       <input type="hidden" name="patient_id">
       <button type="submit" class="primary">Start agent ▸</button>
     </form>
-    <h2>Visits</h2>
+    <h2 class="mt">Visits</h2>
     <ul id="visits" class="list"></ul>
   </section>
 
   <section class="col mid">
-    <div id="empty" class="empty">Start a visit or pick a demo case. The agent runs entirely on this device.</div>
+    <div id="empty" class="empty">
+      <div class="empty-icon">✚</div>
+      <div class="empty-title">Start a visit or pick a demo case</div>
+      <div>Gemma 4 reads the note, the protocol checks it, and the agent asks, advises or hands off. All on this device, even with no network.</div>
+    </div>
     <div id="detail" hidden>
-      <div class="dhead">
-        <div><h2 id="dTitle"></h2><div id="dSub" class="muted"></div></div>
-        <span id="dStatus" class="badge"></span>
+      <div class="patient">
+        <div class="avatar" id="dAvatar"></div>
+        <div class="pinfo"><h2 id="dTitle"></h2><div id="dSub" class="note"></div></div>
+        <span id="dStatus" class="status"></span>
       </div>
+
+      <ol id="phases" class="phases">
+        <li data-p="sense"><b>Sense</b><span>read note, history, rules</span></li>
+        <li data-p="decide"><b>Decide</b><span>Gemma picks next step</span></li>
+        <li data-p="act"><b>Act</b><span>run the tool</span></li>
+        <li data-p="check"><b>Check</b><span>safety verifier</span></li>
+      </ol>
+
       <div id="question" class="question" hidden>
-        <div class="qlabel">Agent needs your input</div>
+        <div class="qlabel">🙋 The agent needs your input</div>
         <div id="qText"></div>
-        <form id="answerForm"><input name="answer" autocomplete="off" required placeholder="Type answer…"><button class="primary">Send</button></form>
+        <form id="answerForm"><input name="answer" autocomplete="off" required placeholder="Type or speak the answer…"><button type="button" id="answerMic" class="mic">🎤</button><button class="primary">Send</button></form>
       </div>
+
       <div id="plan" class="plan" hidden></div>
-      <h3>Agent loop <span class="muted">sense → decide → act → check</span></h3>
-      <ol id="trace" class="trace"></ol>
+
+      <div class="grid2">
+        <div class="card">
+          <h3>What Gemma understood</h3>
+          <div id="findings" class="findings"><span class="muted">Reading the note…</span></div>
+        </div>
+        <div class="card">
+          <h3>Vitals & protocol</h3>
+          <div id="vitals"></div>
+        </div>
+      </div>
+
+      <div id="stats" class="stats"></div>
+
+      <details id="traceBox" class="card tracebox" open>
+        <summary><h3>Agent trace <span class="muted" id="traceCount"></span></h3></summary>
+        <ol id="trace" class="trace"></ol>
+      </details>
     </div>
   </section>
 
   <section class="col right">
     <h2>Clinician handoffs</h2>
-    <ul id="handoffs" class="list"></ul>
-    <h2>How it stays safe</h2>
+    <ul id="handoffs" class="list handoffs"></ul>
+    <h2 class="mt">How it stays safe</h2>
     <ul class="notes">
       <li><b>Gemma decides, rules verify.</b> The checker can raise triage, never lower it.</li>
       <li><b>RED sign ⇒ instant referral</b>, before any more model reasoning.</li>
-      <li><b>Low confidence or loops ⇒ human handoff</b>, never a guess.</li>
+      <li><b>Evidence, not guesses.</b> Every danger sign Gemma finds is quoted from the note; a negation-aware keyword net double-checks it.</li>
+      <li><b>Bad readings are re-measured</b>, vague notes get a clarifying question.</li>
+      <li><b>Low confidence or loops ⇒ human handoff.</b></li>
       <li><b>Model crash ⇒ rules-only mode</b>; the visit still completes.</li>
+      <li><b>Voice in, voice out.</b> Gemma 4 transcribes speech on-device; advice is read aloud in the family's language.</li>
       <li><b>No network needed.</b> Records queue locally and sync when signal returns.</li>
     </ul>
     <p class="disclaimer">Demo protocol for a hackathon, not validated medical advice.</p>
   </section>
 </main>
+<script src="/voice.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>

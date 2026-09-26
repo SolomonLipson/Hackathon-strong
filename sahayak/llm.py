@@ -11,8 +11,10 @@ Failure handling, from best to worst:
   3. LLMUnavailable is raised; the agent then switches to its deterministic
      rules-only planner, so a patient visit is never lost because the model died.
 
-Use cases: the agent's DECIDE step (choose next tool) and the SENSE step's
-free-text extraction (turn a health worker's note into structured findings).
+Use cases: the agent's DECIDE step (choose next tool), the SENSE step's
+free-text extraction (turn a health worker's note into structured findings),
+and voice input: `transcribe()` sends recorded speech to Gemma 4's native
+audio encoder (no separate ASR model, no cloud).
 """
 
 import json
@@ -86,6 +88,7 @@ def chat_json(system: str, user: str, schema: dict, models: list[str] | None = N
                 "model": model,
                 "stream": False,
                 "think": False,
+                "keep_alive": "30m",  # keep Gemma resident between steps
                 "format": schema,
                 "options": {"temperature": config.LLM_TEMPERATURE, "num_ctx": config.LLM_NUM_CTX},
                 "messages": [
@@ -104,3 +107,34 @@ def chat_json(system: str, user: str, schema: dict, models: list[str] | None = N
                 last_err = err
                 log.warning("gemma failure model=%s attempt=%d: %s", model, attempt, err)
     raise LLMUnavailable(f"no local model answered: {last_err}")
+
+
+TRANSCRIBE_PROMPT = (
+    "Transcribe this audio recording verbatim. The speaker is a community health worker describing a patient "
+    "and may speak English, Hindi, Telugu or a mix. Write each word in the language and script it was spoken in; "
+    "keep numbers as digits. Output only the transcript, nothing else."
+)
+
+
+def transcribe(wav_b64: str) -> tuple[str, str]:
+    """Speech-to-text with Gemma 4 audio input. Returns (text, model). Raises LLMUnavailable."""
+    if not _enabled:
+        raise LLMUnavailable("local model disabled (simulated crash)")
+    last_err: Exception | None = None
+    for model in (config.PRIMARY_MODEL, config.FALLBACK_MODEL):
+        body = {
+            "model": model, "stream": False, "think": False,
+            "options": {"temperature": 0},
+            # Ollama passes audio clips to Gemma 4 through the multimodal "images" field.
+            "messages": [{"role": "user", "content": TRANSCRIBE_PROMPT, "images": [wav_b64]}],
+        }
+        log.info("gemma transcribe model=%s audio_bytes=%d (inline audio stripped from log)", model, len(wav_b64) * 3 // 4)
+        t0 = time.monotonic()
+        try:
+            text = _post("/api/chat", body, config.LLM_TIMEOUT_S)["message"]["content"].strip()
+            log.info("gemma transcript model=%s %.1fs: %s", model, time.monotonic() - t0, text)
+            return text, model
+        except (urllib.error.URLError, OSError, KeyError, ValueError) as err:
+            last_err = err
+            log.warning("transcribe failure model=%s: %s", model, err)
+    raise LLMUnavailable(f"no local model could transcribe: {last_err}")

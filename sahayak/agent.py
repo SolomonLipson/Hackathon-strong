@@ -25,6 +25,7 @@ Offline error recovery:
 """
 
 import json
+import re
 import threading
 import time
 
@@ -63,10 +64,11 @@ DECIDE_SYSTEM = """You are Sahayak, an offline triage assistant for a community 
 You run fully on-device. You never diagnose; you triage, advise safe first steps, and hand off to clinicians.
 
 Each turn, choose exactly ONE tool:
-- extract_findings: read the note into structured findings (do this first).
-- check_danger_signs: run the protocol danger-sign rules (after findings, and again after new vitals/answers).
-- get_patient_history: look at this patient's previous visits.
-- ask_health_worker {question, field}: ask for ONE missing measurement or fact. field = the vital it fills (rr, temp_c, sbp, dbp, hr, spo2) or "none".
+(The note is already read into "findings", history is loaded and the protocol rules are applied automatically in the SENSE phase.
+ findings.unclear_signs are danger signs the note only hints at: consider asking about the most important one.)
+- extract_findings / check_danger_signs / get_patient_history: re-run only if something changed.
+- ask_health_worker {question, field}: ask for ONE missing measurement, a re-measurement of an unreliable reading, or a clarifying fact.
+  field = the vital it fills (rr, temp_c, sbp, dbp, hr, spo2) or "none" for a free-text clarification (e.g. a vague note: ask since when and what other symptoms).
 - recommend_care {triage, advice_steps, advice_local_language, followup_days, confidence, rationale}:
   triage GREEN (home care), YELLOW (clinic within 24h), RED (refer now). Never lower than the protocol level.
   advice_steps: 2-5 short practical steps for the health worker. advice_local_language: the same advice for the family in the requested language.
@@ -181,12 +183,49 @@ def _finalize(s: AgentState) -> str:
     return status
 
 
+def _sense(s: AgentState) -> bool:
+    """
+    SENSE phase, run automatically whenever the agent's picture is stale:
+    Gemma reads the note (+ answers) into findings, local history is loaded,
+    and the deterministic danger-sign rules are applied. These steps are
+    always needed, so they don't cost a model decision; a RED sign therefore
+    opens the emergency referral within seconds. Returns True if it did work.
+    """
+    did = False
+    if not s.findings:
+        was_degraded = s.degraded
+        res = TOOLS["extract_findings"](s, {})
+        if s.degraded and not was_degraded:
+            store.add_step(s.encounter_id, s.step, "recover", None,
+                           {"message": "Local model unavailable: read the note with the keyword extractor and switched to the deterministic rules planner."})
+        store.add_step(s.encounter_id, s.step, "sense", "extract_findings", res, res.get("model") or "keywords")
+        did = True
+    if s.history is None:
+        store.add_step(s.encounter_id, s.step, "sense", "get_patient_history", TOOLS["get_patient_history"](s, {}))
+        did = True
+    if s.rules is None:
+        res = TOOLS["check_danger_signs"](s, {})
+        store.add_step(s.encounter_id, s.step, "check", "check_danger_signs", {"ok": True, **res})
+        post = checker.postcheck(s, "check_danger_signs", res)
+        if post.get("force"):
+            forced = TOOLS["refer_to_clinician"](s, {"urgency": "RED", "reason": post.get("reason") or post["feedback"]})
+            store.add_step(s.encounter_id, s.step, "check", "refer_to_clinician",
+                           {"ok": True, "forced": True, "feedback": post["feedback"], **forced})
+            s.last_feedback = (post["feedback"] + " The referral is DONE (do not call refer_to_clinician again). "
+                               f"Still open: {', '.join(checker.open_items(s))}.")
+        did = True
+    return did
+
+
 @logged(log)
 def run(s: AgentState) -> str:
     """Drive the loop until done, paused for input, or out of budget. Returns status."""
     _persist(s, "running")
     while s.step < config.MAX_STEPS:
         s.step += 1
+        if _sense(s):
+            _persist(s, "running")
+            continue
         tool, args, thought, model = _decide(s)
         store.add_step(s.encounter_id, s.step, "decide", tool, {"thought": thought, "args": args}, model)
 
@@ -211,7 +250,7 @@ def run(s: AgentState) -> str:
         if post.get("force"):
             urgency = max("YELLOW", (s.rules or {}).get("level", "YELLOW"), s.plan.get("triage") or "YELLOW",
                           key=protocols.LEVELS.index)  # a handoff is never GREEN
-            forced = TOOLS[post["force"]](s, {"urgency": urgency, "reason": post["feedback"]})
+            forced = TOOLS[post["force"]](s, {"urgency": urgency, "reason": post.get("reason") or post["feedback"]})
             store.add_step(s.encounter_id, s.step, "check", post["force"], {"ok": True, "forced": True,
                                                                                "feedback": post["feedback"], **forced})
             s.last_feedback = (post["feedback"] + " The referral is DONE (do not call refer_to_clinician again). "
@@ -304,13 +343,14 @@ def answer(eid: str, text: str, resume: bool = True) -> None:
                   if st["phase"] == "act" and st["tool"] == "ask_health_worker"), None)
     field = field if field in VITAL_FIELDS else None
     s.answers.append({"question": q, "field": field, "answer": text})
-    if field:
-        try:
-            s.vitals[field] = float(text.strip().split()[0])
-        except (ValueError, IndexError):
-            pass
+    m = re.search(r"-?\d+(?:\.\d+)?", text) if field else None
+    if m:
+        value = float(m.group())
+        if field == "temp_c" and value > 50:  # given in Fahrenheit
+            value = round((value - 32) * 5 / 9, 1)
+        s.vitals[field] = value
     else:
-        s.findings = {}  # new free-text information: re-extract
+        s.findings = {}  # new free-text information: re-extract with the answer included
     store.add_step(eid, s.step, "sense", "worker_answer", {"question": q, "answer": text, "field": field})
     s.last_feedback = f"The health worker answered '{q}' with '{text}'. Re-check danger signs before deciding."
     store.update_encounter(eid, answers=s.answers, vitals=s.vitals, findings=s.findings, question=None, status="running")

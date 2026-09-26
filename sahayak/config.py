@@ -30,7 +30,7 @@ FALLBACK_MODEL = os.environ.get("SAHAYAK_FALLBACK_MODEL", "gemma4:e2b-it-qat")
 LLM_TIMEOUT_S = float(os.environ.get("SAHAYAK_LLM_TIMEOUT", "120"))
 LLM_RETRIES = 1  # extra attempts per model before moving down the fallback chain
 LLM_TEMPERATURE = 0.1
-LLM_NUM_CTX = 8192
+LLM_NUM_CTX = 6144
 
 # --- Agent loop --------------------------------------------------------------
 MAX_STEPS = 12              # hard ceiling on decide/act/check iterations

@@ -57,11 +57,24 @@ class AgentState:
 
 # --- SENSE: extraction ----------------------------------------------------------
 
+# Checklist extraction: Gemma must rule each danger sign in or out, with a
+# quote from the note as evidence. Forcing a verdict per sign (instead of
+# "list the danger signs") markedly improves recall on small on-device models.
 EXTRACT_SCHEMA = {
     "type": "object",
     "properties": {
+        "danger_sign_checklist": {
+            "type": "object",
+            "properties": {code: {"type": "string", "enum": ["yes", "no", "unclear"]} for code in protocols.DANGER_SIGNS},
+            "required": list(protocols.DANGER_SIGNS),
+        },
+        "evidence": {
+            "type": "array",
+            "items": {"type": "object", "properties": {"code": {"type": "string"}, "quote": {"type": "string"}},
+                      "required": ["code", "quote"]},
+        },
         "symptoms": {"type": "array", "items": {"type": "string"}},
-        "danger_signs": {"type": "array", "items": {"type": "string", "enum": list(protocols.DANGER_SIGNS)}},
+        "negated": {"type": "array", "items": {"type": "string"}},
         "duration_days": {"type": ["number", "null"]},
         "vitals_in_note": {
             "type": "object",
@@ -69,16 +82,22 @@ EXTRACT_SCHEMA = {
         },
         "summary": {"type": "string"},
     },
-    "required": ["symptoms", "danger_signs", "duration_days", "vitals_in_note", "summary"],
+    "required": ["danger_sign_checklist", "evidence", "symptoms", "negated", "duration_days", "vitals_in_note", "summary"],
 }
 
 EXTRACT_SYSTEM = (
-    "You extract clinical findings from a community health worker's visit note. "
-    "The note may mix English with Hindi/Telugu words. Only report what the note says; never invent. "
-    "symptoms: short lowercase English words (fever, cough, diarrhoea, vomiting, headache, rash, pain, bleeding...). "
-    "danger_signs: only from the allowed list and only if clearly described. "
-    "vitals_in_note: numbers mentioned in the note (temp_c in Celsius: convert Fahrenheit), else null. "
-    "summary: one English sentence."
+    "You are the clinical reader for a community health worker in India. The note may be English, Hindi, Telugu, "
+    "Hinglish or a mix, in any script, and may come from speech transcription. Read it carefully and literally; "
+    "never invent facts.\n"
+    "1. danger_sign_checklist: for EVERY sign answer yes (clearly described, even in everyday words), no (absent or "
+    "explicitly denied) or unclear (hinted but not certain). Definitions:\n"
+    + "\n".join(f"   - {code}: {desc}" for code, desc in protocols.DANGER_SIGN_DEFS.items())
+    + "\n2. evidence: for each 'yes' or 'unclear' sign, the exact words from the note.\n"
+    "3. symptoms: short lowercase English words for symptoms that ARE present (fever, cough, diarrhoea, vomiting, "
+    "headache, abdominal pain, rash, weakness, ...). Put denied symptoms ('no vomiting', 'bukhar nahi') in negated.\n"
+    "4. duration_days: how long the illness has lasted in days (yesterday=1, since morning=0), else null.\n"
+    "5. vitals_in_note: numbers stated in the note (temp_c in Celsius; convert Fahrenheit), else null.\n"
+    "6. summary: one clear English sentence."
 )
 
 
@@ -102,17 +121,38 @@ def extract_findings(state: AgentState, args: dict) -> dict:
     if state.answers:
         user += f"\nFollow-up answers: {state.answers}"
     model = None
+    text = state.note + " " + " ".join(a["answer"] for a in state.answers)
     try:
-        found, model = llm.chat_json(EXTRACT_SYSTEM, user, EXTRACT_SCHEMA)
-        found["source"] = model
+        raw, model = llm.chat_json(EXTRACT_SYSTEM, user, EXTRACT_SCHEMA)
+        checklist = dict(raw.get("danger_sign_checklist") or {})
+        # Grounding check: a "yes" whose quoted evidence is not in the note is
+        # treated as unclear (the keyword net still backs up real mentions).
+        quotes = {e.get("code"): (e.get("quote") or "").strip().lower() for e in raw.get("evidence") or []}
+        for code, verdict in checklist.items():
+            q = quotes.get(code, "")
+            if verdict == "yes" and q and q.strip('"“”. ') not in text.lower():
+                checklist[code] = "unclear"
+        found = {
+            "symptoms": raw.get("symptoms") or [],
+            "danger_signs": [c for c, v in checklist.items() if v == "yes" and c in protocols.DANGER_SIGNS],
+            "unclear_signs": [c for c, v in checklist.items() if v == "unclear" and c in protocols.DANGER_SIGNS],
+            "evidence": raw.get("evidence") or [],
+            "negated": raw.get("negated") or [],
+            "duration_days": raw.get("duration_days"),
+            "vitals_in_note": raw.get("vitals_in_note") or {},
+            "summary": raw.get("summary", ""),
+            "source": model,
+        }
     except llm.LLMUnavailable:
-        found = protocols.keyword_extract(state.note + " " + " ".join(a["answer"] for a in state.answers))
+        found = protocols.keyword_extract(text)
         state.degraded = True
     # Safety net: keyword-detected danger signs are always kept, even if the model missed them.
-    kw = protocols.keyword_extract(state.note)
+    kw = protocols.keyword_extract(text)
     missed = sorted(set(kw["danger_signs"]) - set(found.get("danger_signs", [])))
     found["danger_signs"] = sorted(set(found.get("danger_signs", [])) | set(kw["danger_signs"]))
-    found["symptoms"] = sorted(set(found.get("symptoms", [])) | set(kw["symptoms"]))
+    found["symptoms"] = sorted((set(found.get("symptoms", [])) | set(kw["symptoms"])) - set(found.get("negated", [])))
+    if found.get("duration_days") is None:
+        found["duration_days"] = kw["duration_days"]
     added = _merge_note_vitals(state, found.pop("vitals_in_note", {}))
     state.findings = found
     state.rules = None  # findings changed: rules must be re-run

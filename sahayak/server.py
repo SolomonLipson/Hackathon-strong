@@ -13,6 +13,7 @@ default, so the whole app runs on an offline laptop. Routes:
   GET  /api/patients              known patients (for repeat visits)
   GET  /api/handoffs              open clinician handoffs
   POST /api/handoffs/<id>/ack     clinician acknowledges a handoff
+  POST /api/transcribe {audio}    voice input: base64 16 kHz WAV -> text (Gemma 4 audio)
   POST /api/network {online}      simulate connectivity
   POST /api/model {enabled}       simulate the local model crashing
 """
@@ -84,6 +85,12 @@ class Handler(BaseHTTPRequestHandler):
         if m:
             store.execute("UPDATE handoffs SET status='acknowledged' WHERE id=?", (m.group(1),))
             return self._send(200, {"ok": True})
+        if path == "/api/transcribe":
+            try:
+                text, model = llm.transcribe(body.get("audio", ""))
+                return self._send(200, {"text": text, "model": model})
+            except llm.LLMUnavailable as err:
+                return self._send(503, {"error": f"Voice needs the local model: {err}. Please type instead."})
         if path == "/api/network":
             sync.set_online(bool(body.get("online")))
             return self._send(200, sync.stats())
