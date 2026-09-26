@@ -11,7 +11,7 @@ Sahayak ("helper") supports a community health worker (ASHA) during a home visit
 - It **hands off to a clinician** when anything is RED, when its confidence is low, or when it keeps getting rejected.
 - It **queues records** in a local outbox and syncs them when connectivity returns.
 
-- It **listens**: the worker can speak the note or an answer. **Gemma 4 transcribes the audio on-device** with its native audio encoder and returns a cleaned transcript (no "umm/aah", no false starts, every clinical fact kept). There is no cloud speech API and no separate ASR model. Advice is **read aloud** in Hindi or Telugu by the operating system's offline voices.
+- It **listens**: the worker can speak the note or an answer. **Gemma 4 transcribes the audio on-device** with its native audio encoder and returns a cleaned transcript (no "umm/aah", no false starts, every clinical fact kept). There is no cloud speech API and no separate ASR model. Advice is **read aloud** in Hindi or Telugu by offline neural voices (Piper), with OS voices as a fallback.
 - It **protects privacy**: names are masked on screen with one click, synced records are de-identified, and **Wipe data** erases the device.
 - It **doubts bad readings**: a physiologically implausible vital, such as 30 °C in a talking patient, is not acted on. The agent asks for a re-measure. A vague note ("not sure, low energy") gets a clarifying question.
 
@@ -48,7 +48,13 @@ Run the accuracy evaluation (19 labelled vignettes, Gemma vs rules-only, results
 python3 eval/run_eval.py
 ```
 
-**For natural voices (recommended, one-time, then offline):** macOS System Settings → Accessibility → Spoken Content → System voice → Manage Voices, then download **Geeta (Enhanced)** for Telugu, **Lekha (Enhanced)** for Hindi, and **Rishi (Enhanced)** for Indian English. Sahayak automatically uses the best installed variant (Premium > Enhanced > compact).
+**Natural Telugu and Hindi voices (recommended, one-time ~130 MB download, then fully offline):**
+
+```bash
+./scripts/setup_voices.sh   # Piper neural TTS: te_IN "padmavathi", hi_IN "priyamvada"
+```
+
+Without it, read-aloud falls back to the operating system's voices.
 
 Voice input needs a browser microphone. `http://127.0.0.1` counts as a secure origin, so Chrome allows it offline.
 
@@ -92,7 +98,7 @@ sahayak/
   sync.py       store-and-forward outbox with back-off + idempotency keys
   server.py     stdlib HTTP server + JSON API
   static/       offline single-page UI (no CDN)
-  tts.py        offline read-aloud (best installed macOS voice / espeak-ng)
+  tts.py        offline read-aloud (Piper neural voices, else macOS voice / espeak-ng)
   intake.py     voice mode: Gemma turns a spoken description into the visit form
   static/conversation.js  "Talk to Sahayak" hands-free spoken dialogue
   static/voice.js  mic capture + auto-stop on silence -> 16 kHz WAV -> Gemma cleaned transcript; read-aloud playback

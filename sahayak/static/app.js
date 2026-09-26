@@ -297,7 +297,7 @@ async function refreshDetail() {
   $("#empty").hidden = true;
   $("#detail").hidden = false;
   $("#dAvatar").textContent = (shownName(e.patient.name) || "?").trim()[0].toUpperCase();
-  $("#dTitle").textContent = `${shownName(e.patient.name)} · ${e.patient.age_years < 1 ? Math.round(e.patient.age_years * 12) + " months" : e.patient.age_years + " y"} ${e.patient.sex || ""}${e.patient.pregnant ? " · pregnant" : ""}`;
+  $("#dTitle").textContent = `${shownName(e.patient.name)} · ${e.patient.age_years == null ? "age ?" : e.patient.age_years < 1 ? Math.round(e.patient.age_years * 12) + " months" : e.patient.age_years + " y"} ${e.patient.sex || ""}${e.patient.pregnant ? " · pregnant" : ""}`;
   $("#dSub").textContent = `“${e.note}”`;
   const st = $("#dStatus");
   st.textContent = { running: "agent working…", needs_input: "waiting for you", handoff: "handed to clinician", done: "completed", failed: "failed" }[e.status] + (e.degraded ? " · rules-only" : "");

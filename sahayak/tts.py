@@ -6,8 +6,10 @@ spoken. Browsers do not reliably expose Indian-language voices (Chrome on
 macOS often lists none), so speech is synthesized on the device by the
 operating system instead and streamed to the page as a WAV file:
 
-  * macOS: the built-in `say` voices (Lekha = Hindi, Geeta = Telugu,
-    Rishi = Indian English), configured in config.TTS_VOICES.
+  * Piper neural voices (natural-sounding Telugu "padmavathi" and Hindi
+    "priyamvada"), run locally from models/piper (scripts/setup_voices.sh).
+  * macOS: the built-in `say` voices (Rishi = Indian English, and Lekha /
+    Geeta as fallbacks), configured in config.TTS_VOICES.
   * Linux: espeak-ng, if installed.
 
 No network is used. If no engine is available, synthesize() raises
@@ -59,6 +61,13 @@ def synthesize(text: str, language: str) -> bytes:
         raise TTSUnavailable("nothing to say")
     with tempfile.TemporaryDirectory() as tmp:
         out = Path(tmp) / "speech.wav"
+        piper_voice = config.PIPER_DIR / config.PIPER_VOICES.get(language, "-")
+        if config.PIPER_BIN.exists() and piper_voice.exists():
+            proc = subprocess.run([str(config.PIPER_BIN), "-m", str(piper_voice), "-f", str(out)],
+                                  input=text.encode(), capture_output=True, timeout=60)
+            if proc.returncode == 0 and out.exists() and out.stat().st_size > 100:
+                return out.read_bytes()
+            log.warning("piper failed, falling back: %s", proc.stderr.decode(errors="ignore")[-200:])
         if shutil.which("say"):
             voice = best_voice(config.TTS_VOICES.get(language, config.TTS_VOICES["English"]))
             cmd = ["say", "-v", voice, "-o", str(out), "--file-format=WAVE", "--data-format=LEI16@24000", text]

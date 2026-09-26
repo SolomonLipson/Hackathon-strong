@@ -77,14 +77,15 @@ def _options(temperature: float) -> dict:
 
 
 def warm_up() -> None:
-    """Load Gemma into memory at startup so the first visit is not slow."""
-    try:
-        _post("/api/chat", {"model": config.PRIMARY_MODEL, "stream": False, "think": False,
-                            "keep_alive": config.LLM_KEEP_ALIVE, "options": _options(0) | {"num_predict": 1},
-                            "messages": [{"role": "user", "content": "hi"}]}, config.LLM_TIMEOUT_S)
-        log.info("model %s warmed up", config.PRIMARY_MODEL)
-    except (urllib.error.URLError, OSError, KeyError, ValueError) as err:
-        log.warning("warm-up failed (agent will use fallbacks): %s", err)
+    """Load the Gemma models into memory at startup so the first visit is not slow."""
+    for model in dict.fromkeys((config.PRIMARY_MODEL, config.FAST_MODEL)):
+        try:
+            _post("/api/chat", {"model": model, "stream": False, "think": False,
+                                "keep_alive": config.LLM_KEEP_ALIVE, "options": _options(0) | {"num_predict": 1},
+                                "messages": [{"role": "user", "content": "hi"}]}, config.LLM_TIMEOUT_S)
+            log.info("model %s warmed up", model)
+        except (urllib.error.URLError, OSError, KeyError, ValueError) as err:
+            log.warning("warm-up of %s failed (agent will use fallbacks): %s", model, err)
 
 
 def chat_json(system: str, user: str, schema: dict, models: list[str] | None = None) -> tuple[dict, str]:
@@ -170,5 +171,6 @@ def translate(text: str, language: str) -> str:
     out, _ = chat_json(
         f"Translate what a health assistant says into simple spoken {language}, written in {language} script "
         f"(never in English letters). Keep numbers as digits. Output JSON only.",
-        text, {"type": "object", "properties": {"translation": {"type": "string"}}, "required": ["translation"]})
+        text, {"type": "object", "properties": {"translation": {"type": "string"}}, "required": ["translation"]},
+        models=[config.FAST_MODEL, config.PRIMARY_MODEL])
     return out.get("translation") or text

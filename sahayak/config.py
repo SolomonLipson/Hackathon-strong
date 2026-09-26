@@ -27,6 +27,8 @@ OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434")
 # Primary: Gemma 4 E4B (QAT, quantization-aware trained for on-device). Fallback: E2B QAT (smaller, survives low RAM).
 PRIMARY_MODEL = os.environ.get("SAHAYAK_MODEL", "gemma4:e4b-it-qat")
 FALLBACK_MODEL = os.environ.get("SAHAYAK_FALLBACK_MODEL", "gemma4:e2b-it-qat")
+# Small, fast model for conversational chores (voice intake, translating a spoken line).
+FAST_MODEL = os.environ.get("SAHAYAK_FAST_MODEL", FALLBACK_MODEL)
 LLM_TIMEOUT_S = float(os.environ.get("SAHAYAK_LLM_TIMEOUT", "120"))
 LLM_RETRIES = 1  # extra attempts per model before moving down the fallback chain
 LLM_TEMPERATURE = 0.1
@@ -35,8 +37,12 @@ LLM_NUM_CTX = 4096  # one fixed context size for every call, so Ollama never rel
 LLM_KEEP_ALIVE = "30m"     # keep Gemma resident in memory between calls
 LLM_MAX_TOKENS = 700       # cap on generated tokens per call
 
-# --- Read-aloud (offline system text-to-speech) -------------------------------
-# macOS voices via `say`; on Linux espeak-ng is used if installed.
+# --- Read-aloud (offline text-to-speech) -------------------------------------
+# 1st choice: Piper neural voices (natural Hindi/Telugu), installed by scripts/setup_voices.sh.
+PIPER_DIR = BASE_DIR.parent / "models" / "piper"
+PIPER_BIN = PIPER_DIR / "venv" / "bin" / "piper"
+PIPER_VOICES = {"Telugu": "te_IN-padmavathi-medium.onnx", "Hindi": "hi_IN-priyamvada-medium.onnx"}
+# Fallback: macOS `say` voices (or espeak-ng on Linux).
 TTS_VOICES = {"Hindi": "Lekha", "Telugu": "Geeta", "English": "Rishi"}
 
 # --- Agent loop --------------------------------------------------------------

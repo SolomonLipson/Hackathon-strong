@@ -17,7 +17,7 @@ Sahayak is a local web app: Python standard library, SQLite, and Gemma 4 through
 1. **Listens.** Gemma 4 E4B's native audio input turns the worker's speech into a *clean* transcript in about 2–3 s ("umm, the child has, uh, fever for, aah, three days, three days" becomes "The child has fever for 3 days"), with no cloud speech API and no separate ASR model. Recording stops by itself when the speaker pauses.
 2. **Understands.** It turns messy multilingual notes into structured findings with quoted evidence.
 3. **Plans.** It chooses the agent's next action.
-4. **Counsels.** It writes advice in Telugu or Hindi, which the operating system's offline voices read aloud.
+4. **Counsels.** It writes advice in Telugu or Hindi, which natural offline neural voices (Piper) read aloud.
 
 E2B is the low-memory fallback.
 

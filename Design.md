@@ -56,7 +56,13 @@ This is a hands-free, turn-taking voice dialogue held entirely in the chosen lan
 The checker rejects advice written in romanized "Tenglish" or "Hinglish". At least half the letters must be in the Telugu (U+0C00–0C7F) or Devanagari (U+0900–097F) block, so Gemma rewrites it. This is skipped in rules-only mode.
 
 ### Read-aloud ([tts.py](sahayak/tts.py))
-Chrome often exposes no Indian-language voices, so speech is synthesized by the operating system (macOS `say`: Lekha for Hindi, Geeta for Telugu; espeak-ng on Linux) and streamed to the page as WAV at the voice's natural rate. The most natural installed variant is picked automatically (Premium > Enhanced > compact; Enhanced voices are a one-time download and then work offline). The browser's voices are only a fallback.
+macOS ships only robotic "compact" Telugu and Hindi voices, and Chrome often exposes none. Sahayak therefore uses **Piper** neural TTS locally: Telugu "padmavathi" and Hindi "priyamvada", installed once by `scripts/setup_voices.sh`, which synthesize in under 1 s on a laptop CPU. Indian English uses the macOS voice. The fallback order is Piper → macOS `say` (best installed variant) → espeak-ng → browser voices. The audio is streamed to the page as WAV.
+
+### Talk to Sahayak: warmth and robustness
+- It opens by introducing itself, saying it runs privately on the device, and reassuring the worker. After it hears the complaint it acknowledges with empathy, and it confirms what it understood ("Got it, Ravi, 30 years").
+- Only the complaint and age are essential (up to two tries each). Name and sex are asked once, and any gender answer is accepted (F/M/other). It never dead-ends.
+- The small E2B model handles conversational chores (intake form, translation) in about 1.5 s. E4B does the clinical reasoning.
+- The complaint note must be grounded in what was said about the illness. A name, age, or gender answer can never become the complaint.
 
 ### Privacy
 - Everything stays in one local SQLite file. Nothing is sent anywhere except the outbox.
