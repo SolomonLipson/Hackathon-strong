@@ -166,7 +166,8 @@ button.mic.busy { opacity: .75; cursor: wait; }
 .tracebox summary { list-style: none; cursor: pointer; }
 .tracebox summary h3 { display: inline; }
 .trace { list-style: none; padding: 0; margin: 10px 0 0; }
-.trace li { border-left: 3px solid var(--line); padding: 7px 10px; margin-bottom: 6px; background: var(--panel-2); border-radius: 0 10px 10px 0; animation: fadein .3s; }
+.trace li { border-left: 3px solid var(--line); padding: 7px 10px; margin-bottom: 6px; background: var(--panel-2); border-radius: 0 10px 10px 0; }
+.trace li.new { animation: fadein .35s ease-out; }
 .trace .ph { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; margin-right: 6px; }
 .trace .decide { border-color: var(--violet); } .trace .decide .ph { color: var(--violet); }
 .trace .act { border-color: var(--accent); } .trace .act .ph { color: var(--accent); }
@@ -190,3 +191,5 @@ button.mic.busy { opacity: .75; cursor: wait; }
 .speak { margin-left: 8px; }
 @keyframes pulse { 50% { opacity: .35; } }
 @keyframes fadein { from { opacity: 0; transform: translateY(-3px); } }
+.plan.pending { border-style: dashed; }
+button:disabled { opacity: .6; cursor: wait; }

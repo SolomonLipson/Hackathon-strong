@@ -14,10 +14,10 @@ Sahayak is a local web app: Python standard library, SQLite, and Gemma 4 through
 
 **Gemma 4 does four jobs, all on-device:**
 
-1. **Listens.** Gemma 4 E4B's native audio input transcribes the worker's speech (Hindi 2.3 s, English 1.7 s), with no cloud speech API and no separate ASR model.
+1. **Listens.** Gemma 4 E4B's native audio input turns the worker's speech into a *clean* transcript in about 2–3 s ("umm, the child has, uh, fever for, aah, three days, three days" becomes "The child has fever for 3 days"), with no cloud speech API and no separate ASR model. Recording stops by itself when the speaker pauses.
 2. **Understands.** It turns messy multilingual notes into structured findings with quoted evidence.
 3. **Plans.** It chooses the agent's next action.
-4. **Counsels.** It writes advice in Telugu or Hindi, which is read aloud with offline device voices.
+4. **Counsels.** It writes advice in Telugu or Hindi, which the operating system's offline voices read aloud.
 
 E2B is the low-memory fallback.
 
@@ -44,7 +44,8 @@ It **hands off to a clinician** for RED, YELLOW, low confidence, repeated reject
 - **Fallback chain.** If E4B fails after a retry, the agent tries E2B. If that fails, it switches to a **rules-only planner** that uses the same tools and checker. The trace shows a `RECOVER` step and the visit still completes. A **Kill model** button demonstrates this live.
 - **Crash-safe resume.** After `kill -9`, visits are rebuilt by replaying the step trace. That includes knowing whether the rules ran *after* the latest vitals change, and it resumes mid-visit.
 - **Store-and-forward sync.** Visits and referrals queue in a local outbox with idempotency keys and exponential back-off, and drain when signal returns.
-- **Auditability.** Every Gemma call is logged locally with its model, prompt, and output.
+- **Privacy.** Synced records are de-identified (names never leave the device). Names can be masked on screen, and one click wipes all data. Every Gemma call is logged locally for audit.
+- **Speed.** A fixed context size and keep-alive (no model reloads), a startup warm-up, automatic sensing, and auto-close when nothing is left open. A visit takes 2 Gemma calls and 16–20 s, and an emergency referral is visible after about 10 s.
 
 ## Evaluation
 
@@ -63,19 +64,16 @@ The rules-only misses are exactly the cases that need clinical language understa
 
 ## Why these technical choices
 
-- **Gemma 4 E4B/E2B QAT.** These edge models fit on a clinic laptop yet handle Hinglish notes, native-script speech, and Telugu counselling. One model for listening, reading, planning, and speaking keeps the footprint small.
+- **Gemma 4 E4B/E2B QAT.** These edge models fit on a clinic laptop yet handle Hinglish notes, native-script speech, and Telugu counselling.
 - **Checklist extraction with evidence.** Asking a small model "list the danger signs" missed everyday phrasing. Forcing a verdict per sign, with definitions and quotes, fixed the misses we saw and makes each finding auditable.
 - **JSON-schema outputs.** Every model decision is machine-checkable, which is what lets a deterministic checker sit in the loop.
 - **Model as planner, rules as the floor.** Gemma contributes language, judgment, and counselling (it may escalate above the rules), while auditable rules guarantee the minimum. This is the right trust boundary for health.
-- **Standard library only.** There is zero install friction on low-end hardware.
 
 ## Challenges we overcame
 
 - **The model reading everyday language.** Our first extraction missed "has not taken breast milk, very sleepy, hard to wake up" (two RED signs). Checklist extraction plus the negation-aware net fixed it. Later runs over-triaged an ordinary Telugu headache (తలనొప్పి) as "severe headache" and "not eating well" as "unable to feed". Sharper definitions (for example "eating less is NOT this sign") and a grounding check (quoted evidence must really be in the note) fixed both, and each got its own eval case.
-- **Small models repeating themselves.** E4B once called `extract_findings` 12 times in a row. We now sense automatically, reject repeated tools that make no progress, and give an explicit `still_open` list. Visits dropped from about 7 Gemma decisions to 2–4.
+- **Small models repeating themselves.** E4B once called `extract_findings` 12 times in a row. We now sense automatically, reject repeated tools that make no progress, and give an explicit `still_open` list. Visits dropped from about 7 Gemma decisions to 2, and from about 50 s to 16–20 s.
 - **Trusting bad inputs.** A user test entered 30 °C and got an emergency referral. Plausibility ranges now trigger a re-measure. We also corrected temperature bands (hypothermia below 35.0 °C, hyperpyrexia at 41 °C and above).
-- **State consistency across pauses and crashes**, handled by replaying the trace in order.
-- **Venue Wi-Fi.** We used the QAT builds (6.2 GB instead of 9.6 GB).
 
 ## Limitations and next steps
 

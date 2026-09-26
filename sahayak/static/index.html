@@ -26,6 +26,8 @@
     <span id="modelPill" class="pill">model …</span>
     <button id="netBtn" class="pill toggle" title="Simulate connectivity">Offline</button>
     <span id="syncPill" class="pill">outbox …</span>
+    <button id="privacyBtn" class="pill toggle" title="Show only initials on screen">👁 Names shown</button>
+    <button id="wipeBtn" class="pill toggle ghost" title="Permanently delete all patient data on this device">🗑 Wipe data</button>
     <button id="modelBtn" class="pill toggle ghost" title="Simulate the local model crashing">Kill model</button>
   </div>
 </header>
@@ -33,7 +35,6 @@
 <main>
   <section class="col left">
     <h2>New visit</h2>
-    <div class="presets" id="presets"></div>
     <form id="visitForm">
       <div class="row">
         <label>Name<input name="name" required placeholder="Patient name"></label>
@@ -66,7 +67,7 @@
   <section class="col mid">
     <div id="empty" class="empty">
       <div class="empty-icon">✚</div>
-      <div class="empty-title">Start a visit or pick a demo case</div>
+      <div class="empty-title">Start a visit</div>
       <div>Gemma 4 reads the note, the protocol checks it, and the agent asks, advises or hands off. All on this device, even with no network.</div>
     </div>
     <div id="detail" hidden>
@@ -123,7 +124,8 @@
       <li><b>Low confidence or loops ⇒ human handoff.</b></li>
       <li><b>Model crash ⇒ rules-only mode</b>; the visit still completes.</li>
       <li><b>Voice in, voice out.</b> Gemma 4 transcribes speech on-device; advice is read aloud in the family's language.</li>
-      <li><b>No network needed.</b> Records queue locally and sync when signal returns.</li>
+      <li><b>No network needed.</b> Records queue locally and sync when signal returns, de-identified (names never leave the device).</li>
+      <li><b>Private by design.</b> Hide names on screen; wipe all data in one click.</li>
     </ul>
     <p class="disclaimer">Demo protocol for a hackathon, not validated medical advice.</p>
   </section>

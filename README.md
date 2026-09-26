@@ -11,7 +11,8 @@ Sahayak ("helper") supports a community health worker (ASHA) during a home visit
 - It **hands off to a clinician** when anything is RED, when its confidence is low, or when it keeps getting rejected.
 - It **queues records** in a local outbox and syncs them when connectivity returns.
 
-- It **listens**: the worker can speak the note or an answer. **Gemma 4 transcribes the audio on-device** with its native audio encoder, so there is no cloud speech API and no separate ASR model. The advice can be **read aloud** in Hindi or Telugu using the device's offline voices.
+- It **listens**: the worker can speak the note or an answer. **Gemma 4 transcribes the audio on-device** with its native audio encoder and returns a cleaned transcript (no "umm/aah", no false starts, every clinical fact kept). There is no cloud speech API and no separate ASR model. Advice is **read aloud** in Hindi or Telugu by the operating system's offline voices.
+- It **protects privacy**: names are masked on screen with one click, synced records are de-identified, and **Wipe data** erases the device.
 - It **doubts bad readings**: a physiologically implausible vital, such as 30 °C in a talking patient, is not acted on. The agent asks for a re-measure. A vague note ("not sure, low energy") gets a clarifying question.
 
 The model never needs the internet, and the visit still completes if the model crashes.
@@ -49,16 +50,16 @@ python3 eval/run_eval.py
 
 Voice input needs a browser microphone. `http://127.0.0.1` counts as a secure origin, so Chrome allows it offline.
 
-## Demo script (2 minutes)
+## Demo script (3 minutes)
 
-1. **Child · cough, fast breathing?** Gemma reads "breathing fast" as difficulty breathing in a child under five, which is RED, so the **emergency referral opens instantly**. The agent then notices there is no breathing rate and **pauses to ask the worker to count breaths**. Answer `55`. The rules re-check, the plan is RED, and the advice comes in Telugu.
-2. **Pregnant · headache.** The keyword safety net and Gemma both catch *severe headache / blurred vision*, which is a RED danger sign. The **emergency referral opens instantly**, before any more model reasoning, and the agent asks for the BP.
-3. **Hinglish · bachcha behosh.** Gemma reads the Hindi-English note ("behosh" means unconscious, "pee nahi rahi" means not drinking). RED.
-4. Click **Kill model** and run **Adult · mild fever**. The trace shows a `RECOVER` step and the agent finishes in **rules-only mode**.
-5. Toggle **Offline → Online**. The outbox drains, and each record carries an idempotency key.
-6. Click **🎤 Speak the note** and say, for example, *"Bachchi ko do din se bukhar hai, kuch pee nahi rahi"*. Gemma transcribes it locally. Answer the agent's questions by voice too, and press **🔊 Read aloud** on the advice.
-7. Enter temperature `30` with the note *"not sure, low energy"*. The agent refuses to trust the reading, asks for a re-measure, then asks a clarifying question.
-8. Stop the server mid-visit (Ctrl-C) and start it again. The visit **resumes from its last saved step**.
+1. Turn Wi-Fi off. Click **🎤 Speak the note** and just talk, for example *"Bachchi ko do din se tez bukhar hai, behosh jaisi hai, kuch pee nahi rahi"*. Recording stops when you pause, and Gemma returns a cleaned transcript without fillers.
+2. Start the agent. Within about 10 s the SENSE phase shows the RED danger signs with Gemma's quoted evidence, and the **emergency referral is already open**. Gemma then writes the care plan with Telugu or Hindi advice. Press **🔊 Read aloud** (on-device voice).
+3. A 2-year-old with cough and no breathing rate: the agent **pauses and asks the worker to count breaths**. Answer by voice or typing.
+4. Temperature `30` with the note *"not sure, low energy"*: the agent refuses the impossible reading, asks for a re-measure, then asks a clarifying question.
+5. Click **Kill model** and run any visit. The trace shows `RECOVER` and the visit completes in rules-only mode.
+6. Toggle **No network → Online**. The outbox drains, de-identified, so names never leave the device.
+7. **👁 Names shown → 🙈 Names hidden** masks names on screen. **🗑 Wipe data** permanently deletes everything on the device.
+8. `kill -9` the server mid-visit and restart it. The visit resumes from its last saved step.
 
 ## Configuration
 
@@ -87,7 +88,8 @@ sahayak/
   sync.py       store-and-forward outbox with back-off + idempotency keys
   server.py     stdlib HTTP server + JSON API
   static/       offline single-page UI (no CDN)
-  static/voice.js  mic capture -> 16 kHz WAV -> Gemma transcription; offline read-aloud
+  tts.py        offline read-aloud (macOS `say` voices / espeak-ng)
+  static/voice.js  mic capture + auto-stop on silence -> 16 kHz WAV -> Gemma cleaned transcript; read-aloud playback
 tests/          loop and safety tests with a scripted fake model
 eval/           labelled vignettes + accuracy report (Gemma vs rules-only)
 scripts/        export real runs to the GitHub Pages replay demo

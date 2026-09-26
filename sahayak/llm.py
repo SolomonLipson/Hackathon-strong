@@ -71,6 +71,22 @@ def status() -> dict:
     }
 
 
+def _options(temperature: float) -> dict:
+    """Identical runtime options for every call (a different num_ctx forces a model reload)."""
+    return {"temperature": temperature, "num_ctx": config.LLM_NUM_CTX, "num_predict": config.LLM_MAX_TOKENS}
+
+
+def warm_up() -> None:
+    """Load Gemma into memory at startup so the first visit is not slow."""
+    try:
+        _post("/api/chat", {"model": config.PRIMARY_MODEL, "stream": False, "think": False,
+                            "keep_alive": config.LLM_KEEP_ALIVE, "options": _options(0) | {"num_predict": 1},
+                            "messages": [{"role": "user", "content": "hi"}]}, config.LLM_TIMEOUT_S)
+        log.info("model %s warmed up", config.PRIMARY_MODEL)
+    except (urllib.error.URLError, OSError, KeyError, ValueError) as err:
+        log.warning("warm-up failed (agent will use fallbacks): %s", err)
+
+
 def chat_json(system: str, user: str, schema: dict, models: list[str] | None = None) -> tuple[dict, str]:
     """
     Ask a local Gemma model for a JSON object matching `schema`.
@@ -88,9 +104,9 @@ def chat_json(system: str, user: str, schema: dict, models: list[str] | None = N
                 "model": model,
                 "stream": False,
                 "think": False,
-                "keep_alive": "30m",  # keep Gemma resident between steps
+                "keep_alive": config.LLM_KEEP_ALIVE,
                 "format": schema,
-                "options": {"temperature": config.LLM_TEMPERATURE, "num_ctx": config.LLM_NUM_CTX},
+                "options": _options(config.LLM_TEMPERATURE),
                 "messages": [
                     {"role": "system", "content": system},
                     {"role": "user", "content": user},
@@ -110,9 +126,13 @@ def chat_json(system: str, user: str, schema: dict, models: list[str] | None = N
 
 
 TRANSCRIBE_PROMPT = (
-    "Transcribe this audio recording verbatim. The speaker is a community health worker describing a patient "
-    "and may speak English, Hindi, Telugu or a mix. Write each word in the language and script it was spoken in; "
-    "keep numbers as digits. Output only the transcript, nothing else."
+    "You are the speech input of an offline clinical assistant. Listen to this recording of a community health "
+    "worker describing a patient (English, Hindi, Telugu or a mix) and write a CLEAN transcript:\n"
+    "- remove fillers and hesitations (um, uh, hmm, aah, like, you know, matlab, ante), false starts and repeated words;\n"
+    "- fix obvious mis-hearings using the medical context, and write numbers and units as digits (38.5 °C, 3 days);\n"
+    "- keep every clinical fact, symptom, duration, negation ('no fever', 'nahi') and number exactly; never add facts;\n"
+    "- keep the language and script the speaker used.\n"
+    "Output only the cleaned text, nothing else."
 )
 
 
@@ -124,7 +144,7 @@ def transcribe(wav_b64: str) -> tuple[str, str]:
     for model in (config.PRIMARY_MODEL, config.FALLBACK_MODEL):
         body = {
             "model": model, "stream": False, "think": False,
-            "options": {"temperature": 0},
+            "keep_alive": config.LLM_KEEP_ALIVE, "options": _options(0),
             # Ollama passes audio clips to Gemma 4 through the multimodal "images" field.
             "messages": [{"role": "user", "content": TRANSCRIBE_PROMPT, "images": [wav_b64]}],
         }

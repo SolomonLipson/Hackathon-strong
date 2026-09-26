@@ -30,7 +30,14 @@ FALLBACK_MODEL = os.environ.get("SAHAYAK_FALLBACK_MODEL", "gemma4:e2b-it-qat")
 LLM_TIMEOUT_S = float(os.environ.get("SAHAYAK_LLM_TIMEOUT", "120"))
 LLM_RETRIES = 1  # extra attempts per model before moving down the fallback chain
 LLM_TEMPERATURE = 0.1
-LLM_NUM_CTX = 6144
+LLM_NUM_CTX = 4096  # one fixed context size for every call, so Ollama never reloads the model
+
+LLM_KEEP_ALIVE = "30m"     # keep Gemma resident in memory between calls
+LLM_MAX_TOKENS = 700       # cap on generated tokens per call
+
+# --- Read-aloud (offline system text-to-speech) -------------------------------
+# macOS voices via `say`; on Linux espeak-ng is used if installed.
+TTS_VOICES = {"Hindi": "Lekha", "Telugu": "Geeta", "English": "Rishi"}
 
 # --- Agent loop --------------------------------------------------------------
 MAX_STEPS = 12              # hard ceiling on decide/act/check iterations

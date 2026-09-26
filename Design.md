@@ -41,14 +41,27 @@ An ASHA worker in rural Telangana sees a sick child at home. There is often no s
 - **Negation-aware keyword net** (English, Hinglish, Devanagari, Telugu): it handles pre-negation ("no chest pain", "denies fever") and post-negation ("saans nahi phool rahi"). Its danger signs are always unioned in, so a model miss can't lower urgency.
 
 ### Voice ([static/voice.js](sahayak/static/voice.js), `llm.transcribe`)
-- The browser records the mic, then resamples and encodes the clip as a 16 kHz mono PCM WAV. `/api/transcribe` sends it to Gemma 4 E4B's native audio input through Ollama and gets a verbatim transcript in the spoken language and script. The inline audio is stripped from the logs.
+- The browser records the mic and stops automatically about 1.5 s after the speaker goes quiet (energy-based voice-activity detection). It then resamples and encodes the clip as a 16 kHz mono PCM WAV. Gemma is asked for a **clean** transcript: fillers, false starts, and repetitions are removed, while every symptom, negation, and number is kept. `/api/transcribe` sends it to Gemma 4 E4B's native audio input through Ollama and gets a verbatim transcript in the spoken language and script. The inline audio is stripped from the logs.
 - It is used for both the visit note and answers to the agent's questions. The keyword safety net also understands Devanagari and Telugu script, because voice transcripts can arrive in native script.
-- Read-aloud uses browser speech synthesis and prefers on-device voices (for example macOS Lekha for Hindi and Geeta for Telugu).
 
 ### Measurement doubt and clarification ([protocols.py](sahayak/protocols.py))
 - Readings outside physiological ranges (for example temperature outside 32–43 °C or SpO₂ below 50) are **not** used for triage. They raise a YELLOW "unreliable reading" flag, and the agent must ask for a re-measure before finishing.
 - A vague note (at most one symptom, no danger sign, no duration) requires one clarifying question. The free-text answer triggers re-extraction.
 - Temperature bands: RED below 35.0 °C (hypothermia) or at 41 °C and above (hyperpyrexia), YELLOW for 35.0–35.9 °C or 39.5 °C and above.
+
+### Read-aloud ([tts.py](sahayak/tts.py))
+Chrome often exposes no Indian-language voices, so speech is synthesized by the operating system (macOS `say`: Lekha for Hindi, Geeta for Telugu; espeak-ng on Linux) and streamed to the page as WAV. The browser's voices are only a fallback.
+
+### Privacy
+- Everything stays in one local SQLite file. Nothing is sent anywhere except the outbox.
+- Outbox payloads are **de-identified**: patient id, age, sex, and pregnancy only. The name and village never leave the device.
+- **Hide names** shows initials only, which is useful when a family member is looking at the screen. **Wipe data** deletes every table and `VACUUM`s the file so deleted rows don't linger on disk.
+
+### Speed
+- One fixed `num_ctx` and `keep_alive` for every call. Previously, switching between voice and triage calls made Ollama reload the model (about 4 s).
+- The model is warmed up at startup. SENSE costs no decision calls, and a visit closes automatically once the checker has nothing left open.
+- The result: a typical visit takes 2 Gemma calls and 16–20 s on an M5 laptop (about 36 tokens/s), and an emergency referral is visible after about 10 s.
+- The UI redraws only panels whose data changed, and polls fast only while the agent is working.
 
 ### Evaluation ([eval/](eval))
 19 labelled vignettes in English, Hinglish, and Telugu, run through the full agent with scripted worker answers, comparing Gemma against rules-only. The key metric is under-triage.

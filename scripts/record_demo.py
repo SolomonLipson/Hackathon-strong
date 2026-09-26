@@ -32,7 +32,7 @@ CASES = [
     ({"name": "Ramesh", "age_years": 32, "sex": "M"},
      "Mild fever and body ache since yesterday, eating and drinking normally, no vomiting, no breathing problem.",
      {"temp_c": 38.1, "hr": 92, "rr": 18, "spo2": 98}, "Hindi", [], True),
-    ({"name": "Solomon", "age_years": 22, "sex": "M"}, "Not sure, but low energy.",
+    ({"name": "Ravi", "age_years": 22, "sex": "M"}, "Not sure, but low energy.",
      {"temp_c": 30, "hr": 90, "rr": 18, "spo2": 98}, "English",
      ["36.8", "Since 3 days, sleeping badly because of exams, eating and drinking fine, no fever, no other problems."], True),
     ({"name": "Sunita", "age_years": 58, "sex": "F"}, "Cough for 10 days, feels breathless when walking, mild chest pain.",

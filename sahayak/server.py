@@ -14,6 +14,8 @@ default, so the whole app runs on an offline laptop. Routes:
   GET  /api/handoffs              open clinician handoffs
   POST /api/handoffs/<id>/ack     clinician acknowledges a handoff
   POST /api/transcribe {audio}    voice input: base64 16 kHz WAV -> text (Gemma 4 audio)
+  POST /api/speak {text, language} read-aloud: offline OS speech -> WAV
+  POST /api/wipe                  privacy: permanently delete all patient data on this device
   POST /api/network {online}      simulate connectivity
   POST /api/model {enabled}       simulate the local model crashing
 """
@@ -23,7 +25,9 @@ import mimetypes
 import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from . import agent, config, llm, store, sync
+import threading
+
+from . import agent, config, llm, store, sync, tts
 from .log import get_logger
 
 log = get_logger("server")
@@ -91,6 +95,14 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, {"text": text, "model": model})
             except llm.LLMUnavailable as err:
                 return self._send(503, {"error": f"Voice needs the local model: {err}. Please type instead."})
+        if path == "/api/speak":
+            try:
+                return self._send(200, tts.synthesize(body.get("text", ""), body.get("language", "English")), "audio/wav")
+            except tts.TTSUnavailable as err:
+                return self._send(503, {"error": str(err)})
+        if path == "/api/wipe":
+            store.wipe()
+            return self._send(200, {"ok": True})
         if path == "/api/network":
             sync.set_online(bool(body.get("online")))
             return self._send(200, sync.stats())
@@ -116,6 +128,7 @@ def main() -> None:
     if resumed:
         log.info("resumed interrupted encounters: %s", resumed)
     log.info("model status: %s", llm.status())
+    threading.Thread(target=llm.warm_up, daemon=True).start()
     log.info("Sahayak running on http://%s:%d", config.HOST, config.PORT)
     ThreadingHTTPServer((config.HOST, config.PORT), Handler).serve_forever()
 

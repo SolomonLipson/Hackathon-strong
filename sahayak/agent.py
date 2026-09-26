@@ -256,6 +256,19 @@ def run(s: AgentState) -> str:
             s.last_feedback = (post["feedback"] + " The referral is DONE (do not call refer_to_clinician again). "
                                f"Still open: {', '.join(checker.open_items(s))}.")
 
+        if tool == "recommend_care" and s.referral and s.plan.get("rationale"):
+            # The clinician gets Gemma's own reasoning, not just the rule that fired.
+            note = f"{s.referral['reason']} | Gemma: {s.plan['rationale']}"
+            store.execute("UPDATE handoffs SET reason=? WHERE id=?", (note, s.referral["id"]))
+            s.referral["reason"] = note
+        if tool in ("recommend_care", "refer_to_clinician") and checker.open_items(s) == ["finish"] and \
+                checker.precheck(s, "finish", {})["ok"]:
+            # Nothing left to decide: close the visit without spending another model call.
+            summary = s.plan.get("rationale") or "Visit complete."
+            TOOLS["finish"](s, {"summary": summary})
+            store.add_step(s.encounter_id, s.step, "check", "finish",
+                           {"ok": True, "feedback": "All checks passed: visit closed automatically.", "summary": summary})
+
         if s.pending_question:
             _persist(s, "needs_input")
             return "needs_input"

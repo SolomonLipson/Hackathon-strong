@@ -171,3 +171,13 @@ def enqueue(kind: str, idem_key: str, payload: dict) -> None:
         "INSERT OR IGNORE INTO outbox (kind,idem_key,payload) VALUES (?,?,?)",
         (kind, idem_key, json.dumps(payload)),
     )
+
+
+def wipe() -> None:
+    """Privacy: permanently delete every patient, visit, trace, handoff and queued record on this device."""
+    with _lock:
+        c = conn()
+        for table in ("steps", "handoffs", "followups", "outbox", "encounters", "patients"):
+            c.execute(f"DELETE FROM {table}")
+        c.commit()
+        c.execute("VACUUM")  # rewrite the file so deleted rows do not linger on disk

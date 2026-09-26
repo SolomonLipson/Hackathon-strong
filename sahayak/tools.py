@@ -18,6 +18,7 @@ protocol rules, or makes a local Gemma call. Tools:
 database on resume, so a crash never loses a visit.
 """
 
+import re
 import time
 from dataclasses import dataclass, field
 
@@ -101,6 +102,15 @@ EXTRACT_SYSTEM = (
 )
 
 
+def _grounded(quote: str, text: str, min_overlap: float = 0.5) -> bool:
+    """True if enough of the quote's words occur in the text (tolerates script/spelling mixing)."""
+    words = [w for w in re.findall(r"\w+", quote.lower()) if len(w) > 2 and w not in ("not", "the", "and", "has", "since")]
+    if not words:
+        return True  # nothing checkable: trust the model, the keyword net still backs it up
+    hay = text.lower()
+    return sum(w in hay for w in words) / len(words) >= min_overlap
+
+
 def _merge_note_vitals(state: AgentState, found: dict) -> list[str]:
     """Copy vitals mentioned in the note into empty vitals fields."""
     added = []
@@ -129,15 +139,15 @@ def extract_findings(state: AgentState, args: dict) -> dict:
         # treated as unclear (the keyword net still backs up real mentions).
         quotes = {e.get("code"): (e.get("quote") or "").strip().lower() for e in raw.get("evidence") or []}
         for code, verdict in checklist.items():
-            q = quotes.get(code, "")
-            if verdict == "yes" and q and q.strip('"“”. ') not in text.lower():
+            if verdict == "yes" and not _grounded(quotes.get(code, ""), text):
                 checklist[code] = "unclear"
         found = {
             "symptoms": raw.get("symptoms") or [],
             "danger_signs": [c for c, v in checklist.items() if v == "yes" and c in protocols.DANGER_SIGNS],
             "unclear_signs": [c for c, v in checklist.items() if v == "unclear" and c in protocols.DANGER_SIGNS],
             "evidence": raw.get("evidence") or [],
-            "negated": raw.get("negated") or [],
+            # Only keep "ruled out" items the note actually talks about.
+            "negated": [n for n in raw.get("negated") or [] if _grounded(n, text, 0.34)],
             "duration_days": raw.get("duration_days"),
             "vitals_in_note": raw.get("vitals_in_note") or {},
             "summary": raw.get("summary", ""),
@@ -150,6 +160,7 @@ def extract_findings(state: AgentState, args: dict) -> dict:
     kw = protocols.keyword_extract(text)
     missed = sorted(set(kw["danger_signs"]) - set(found.get("danger_signs", [])))
     found["danger_signs"] = sorted(set(found.get("danger_signs", [])) | set(kw["danger_signs"]))
+    found["unclear_signs"] = [c for c in found.get("unclear_signs", []) if c not in found["danger_signs"]]
     found["symptoms"] = sorted((set(found.get("symptoms", [])) | set(kw["symptoms"])) - set(found.get("negated", [])))
     if found.get("duration_days") is None:
         found["duration_days"] = kw["duration_days"]
@@ -216,7 +227,10 @@ def refer_to_clinician(state: AgentState, args: dict) -> dict:
     )
     state.referral = {"id": hid, "urgency": urgency, "reason": reason}
     store.enqueue("referral", f"referral:{hid}", {
-        "encounter_id": state.encounter_id, "patient": state.patient, "vitals": state.vitals,
+        # De-identified: the name and village never leave the device.
+        "encounter_id": state.encounter_id,
+        "patient": {k: state.patient.get(k) for k in ("id", "age_years", "sex", "pregnant")},
+        "vitals": state.vitals,
         "findings": state.findings, "urgency": urgency, "reason": reason,
     })
     return {"referral": state.referral, "queued_for_sync": True}
