@@ -51,7 +51,7 @@ An ASHA worker in rural Telangana sees a sick child at home. There is often no s
 - Temperature bands: RED below 35.0 °C (hypothermia) or at 41 °C and above (hyperpyrexia), YELLOW for 35.0–35.9 °C or 39.5 °C and above.
 
 ### Evaluation ([eval/](eval))
-18 labelled vignettes in English, Hinglish, and Telugu, run through the full agent with scripted worker answers, comparing Gemma against rules-only. The key metric is under-triage.
+19 labelled vignettes in English, Hinglish, and Telugu, run through the full agent with scripted worker answers, comparing Gemma against rules-only. The key metric is under-triage.
 
 ### Check ([checker.py](sahayak/checker.py), [protocols.py](sahayak/protocols.py))
 - `protocols.evaluate`: IMCI-inspired thresholds for SpO₂, temperature (including infants under 2 months), age-specific breathing rate, heart rate, BP (pregnancy-specific), plus danger signs. It returns flags and a minimum level.

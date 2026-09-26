@@ -41,7 +41,7 @@ Run the tests (no model needed):
 python3 -m unittest discover -s tests
 ```
 
-Run the accuracy evaluation (18 labelled vignettes, Gemma vs rules-only, results in [eval/results.md](eval/results.md)):
+Run the accuracy evaluation (19 labelled vignettes, Gemma vs rules-only, results in [eval/results.md](eval/results.md)):
 
 ```bash
 python3 eval/run_eval.py

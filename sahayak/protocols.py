@@ -65,7 +65,7 @@ DANGER_SIGN_DEFS = {
 _SIGN_WORDS = {
     r"unconscious|lethargic|not waking|hard to wake|difficult to wake|not responding|unresponsive|fainted|behosh|drowsy|very sleepy|floppy|uth nahi": "unconscious_or_lethargic",
     r"convuls|seizure|fits?\b|jhatke|daura": "convulsions",
-    r"not (able to )?(drink|feed|breastfeed|eat)|unable to (drink|feed|eat)|(not|n't) (taken|taking|take) (any )?(breast ?milk|milk|feeds?|fluids?|water)|refus\w* (to )?(feed|drink|milk|breast)|pee nahi|pi nahi|doodh nahi": "unable_to_drink_or_feed",
+    r"not (able to )?(drink|feed|breastfeed)|unable to (drink|feed)|(not|n't) (taken|taking|take) (any )?(breast ?milk|milk|feeds?|fluids?|water)|refus\w* (to )?(feed|drink|milk|breast)|pee nahi|pi nahi|doodh nahi": "unable_to_drink_or_feed",
     r"vomit(s|ing)? everything|vomits after every|cannot keep (anything|food|water) down": "vomits_everything",
     r"chest indrawing|indrawing": "chest_indrawing",
     r"heavy bleeding|severe bleeding|bleeding heavily|soaking|won'?t stop bleeding": "severe_bleeding",
