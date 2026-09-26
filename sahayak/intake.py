@@ -26,23 +26,22 @@ SCHEMA = {
         "pregnant": {"type": "boolean"},
         "vitals": {"type": "object", "properties": {k: {"type": ["number", "null"]} for k in VITAL_FIELDS}},
         "clinical_note": {"type": "string"},
-        "missing": {"type": "array", "items": {"type": "string", "enum": ["age", "complaint"]}},
-        "next_question": {"type": "string"},
+
     },
-    "required": ["name", "age_years", "sex", "pregnant", "vitals", "clinical_note", "missing", "next_question"],
+    "required": ["name", "age_years", "sex", "pregnant", "vitals", "clinical_note"],
 }
 
 SYSTEM = (
     "You are the intake step of an offline voice assistant for a community health worker in India. "
-    "From everything the worker has said (English, Hindi, Telugu or mixed), fill the visit form. Never invent.\n"
+    "The transcript is a spoken dialogue: 'Sahayak:' lines are the assistant's questions, 'Worker:' lines are the answers "
+    "(English, Hindi, Telugu or mixed). A short answer refers to the question just before it (Sahayak: 'What is the "
+    "patient's name?' Worker: 'Solomon' -> name Solomon). Fill the visit form from everything said. Never invent.\n"
     "- name: patient's name if said ('This is Lakshmi', 'patient Ravi', 'Riya naam hai' -> the name), else null. age_years: number ('she is 24' = 24, '2 saal ka' = 2, '8 months' = 0.67), else null.\n"
     "- sex: F or M if said or obvious (pregnant = F), else null. pregnant: true only if said.\n"
     "- vitals: temp_c (convert Fahrenheit), hr (pulse), rr (breaths per minute), spo2, sbp/dbp (BP '150 over 100'), else null.\n"
     "- clinical_note: a clean, complete description of the illness in the worker's words (symptoms, duration, what was "
-    "seen), without the name/age/vitals already captured.\n"
-    "- missing: 'age' if age unknown, 'complaint' if no illness described yet.\n"
-    "- next_question: ONE short friendly spoken question (English) about THE PATIENT (third person, e.g. 'How old is the "
-    "patient?') asking for the FIRST item in `missing`, else ''."
+    "seen), without the name/age/vitals. Empty string if no illness has been described yet. Never copy these "
+    "instructions or invent symptoms."
 )
 
 
@@ -65,11 +64,17 @@ def extract(transcript: str) -> dict:
     form, model = llm.chat_json(SYSTEM, f"What the worker said so far:\n{transcript}", SCHEMA)
     form["vitals"] = {k: v for k, v in (form.get("vitals") or {}).items() if v is not None and k in VITAL_FIELDS}
     if form.get("age_years") is None:  # backup for plainly spoken ages the model skipped
-        age = _spoken_age(transcript)
-        if age is not None:
-            form["age_years"] = age
-            form["missing"] = [m for m in form.get("missing", []) if m != "age"]
-            if not form["missing"]:
-                form["next_question"] = ""
+        form["age_years"] = _spoken_age(transcript)
+    if form.get("pregnant"):
+        form["sex"] = "F"
+    # What is still missing is decided by code, not by the model, so the
+    # conversation never starts a visit without the essentials.
+    note = (form.get("clinical_note") or "").strip()
+    form["missing"] = [field for field, absent in (
+        ("name", not form.get("name")),
+        ("age", form.get("age_years") is None),
+        ("sex", form.get("sex") not in ("F", "M")),
+        ("complaint", len(note) < 8),
+    ) if absent]
     form["model"] = model
     return form

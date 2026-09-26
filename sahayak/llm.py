@@ -126,13 +126,10 @@ def chat_json(system: str, user: str, schema: dict, models: list[str] | None = N
 
 
 TRANSCRIBE_PROMPT = (
-    "You are the speech input of an offline clinical assistant. Listen to this recording of a community health "
-    "worker describing a patient (English, Hindi, Telugu or a mix) and write a CLEAN transcript:\n"
-    "- remove fillers and hesitations (um, uh, hmm, aah, like, you know, matlab, ante), false starts and repeated words;\n"
-    "- fix obvious mis-hearings using the medical context, and write numbers and units as digits (38.5 °C, 3 days);\n"
-    "- keep every clinical fact, symptom, duration, negation ('no fever', 'nahi') and number exactly; never add facts;\n"
-    "- keep the language and script the speaker used.\n"
-    "Output only the cleaned text, nothing else."
+    "Transcribe this {secs:.1f}-second audio clip. Write ONLY the words the speaker actually says, in the language and "
+    "script they speak (English, Hindi, Telugu or mixed). Drop filler sounds (um, uh, hmm, aah) and immediate word "
+    "repetitions. Write numbers as digits. NEVER add, guess or complete anything that was not spoken: a short clip gives "
+    "a short transcript (about {words} words at most). If nothing intelligible is said, output an empty line."
 )
 
 
@@ -141,20 +138,37 @@ def transcribe(wav_b64: str) -> tuple[str, str]:
     if not _enabled:
         raise LLMUnavailable("local model disabled (simulated crash)")
     last_err: Exception | None = None
+    secs = max(0.5, (len(wav_b64) * 3 // 4 - 44) / 32000)  # 16 kHz mono 16-bit PCM
     for model in (config.PRIMARY_MODEL, config.FALLBACK_MODEL):
         body = {
             "model": model, "stream": False, "think": False,
             "keep_alive": config.LLM_KEEP_ALIVE, "options": _options(0),
             # Ollama passes audio clips to Gemma 4 through the multimodal "images" field.
-            "messages": [{"role": "user", "content": TRANSCRIBE_PROMPT, "images": [wav_b64]}],
+            "messages": [{"role": "user", "content": TRANSCRIBE_PROMPT.format(secs=secs, words=max(3, int(secs * 3.5))),
+                          "images": [wav_b64]}],
         }
         log.info("gemma transcribe model=%s audio_bytes=%d (inline audio stripped from log)", model, len(wav_b64) * 3 // 4)
         t0 = time.monotonic()
         try:
             text = _post("/api/chat", body, config.LLM_TIMEOUT_S)["message"]["content"].strip()
+            words = text.split()
+            if len(words) > secs * 5 + 4:  # physically impossible speaking rate: the model made things up
+                log.warning("transcript too long for %.1fs clip (%d words); truncating", secs, len(words))
+                text = " ".join(words[: int(secs * 4) + 3])
             log.info("gemma transcript model=%s %.1fs: %s", model, time.monotonic() - t0, text)
             return text, model
         except (urllib.error.URLError, OSError, KeyError, ValueError) as err:
             last_err = err
             log.warning("transcribe failure model=%s: %s", model, err)
     raise LLMUnavailable(f"no local model could transcribe: {last_err}")
+
+
+def translate(text: str, language: str) -> str:
+    """Translate a short spoken line into the family's language, in its native script (on-device)."""
+    if language == "English" or not text:
+        return text
+    out, _ = chat_json(
+        f"Translate what a health assistant says into simple spoken {language}, written in {language} script "
+        f"(never in English letters). Keep numbers as digits. Output JSON only.",
+        text, {"type": "object", "properties": {"translation": {"type": "string"}}, "required": ["translation"]})
+    return out.get("translation") or text

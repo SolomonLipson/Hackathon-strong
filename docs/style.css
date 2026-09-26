@@ -216,3 +216,5 @@ button.talk:hover { filter: brightness(1.08); }
 .orb.speaking { background: var(--accent); animation: pulse 0.9s infinite; }
 .orb.listening { background: var(--red); box-shadow: 0 0 0 6px var(--red-bg); animation: pulse 1.2s infinite; }
 .orb.transcribing, .orb.thinking { background: var(--violet); animation: pulse 1.5s infinite; }
+.convo-pick { margin: 8px 0 0; display: flex; align-items: center; gap: 8px; }
+.convo-pick select { width: auto; flex: 1; margin: 0; }

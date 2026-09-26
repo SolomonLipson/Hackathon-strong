@@ -35,6 +35,8 @@
 <main>
   <section class="col left">
     <button id="convoBtn" class="talk">🎙 Talk to Sahayak<small>hands-free voice conversation · offline</small></button>
+    <label class="convo-pick">Conversation language
+      <select id="convoLang"><option>Telugu</option><option>Hindi</option><option>English</option></select></label>
     <div class="or">or fill in the visit</div>
     <h2>New visit</h2>
     <form id="visitForm">
@@ -136,7 +138,7 @@
   <div class="convo-head">
     <div class="orb idle" id="convoOrb"></div>
     <div class="convo-title"><b>Talk to Sahayak</b><div id="convoState" class="hint">Starting…</div></div>
-    <label class="convo-lang">Family language<select id="convoLang"><option>Telugu</option><option>Hindi</option><option>English</option></select></label>
+    <span id="convoLangBadge" class="badge"></span>
     <button id="convoEnd" class="pill toggle">End</button>
   </div>
   <div id="convoLog" class="convo-log"></div>

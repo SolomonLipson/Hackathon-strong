@@ -16,6 +16,7 @@ default, so the whole app runs on an offline laptop. Routes:
   POST /api/transcribe {audio}    voice input: base64 16 kHz WAV -> text (Gemma 4 audio)
   POST /api/speak {text, language} read-aloud: offline OS speech -> WAV
   POST /api/intake {transcript}   voice mode: Gemma turns spoken description into a visit form
+  POST /api/translate {text, language}  voice mode: Gemma translates a spoken line into the family's language
   POST /api/wipe                  privacy: permanently delete all patient data on this device
   POST /api/network {online}      simulate connectivity
   POST /api/model {enabled}       simulate the local model crashing
@@ -106,6 +107,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, intake.extract(body.get("transcript", "")))
             except llm.LLMUnavailable as err:
                 return self._send(503, {"error": f"Voice mode needs the local model: {err}"})
+        if path == "/api/translate":
+            try:
+                return self._send(200, {"text": llm.translate(body.get("text", ""), body.get("language", "English"))})
+            except llm.LLMUnavailable:
+                return self._send(200, {"text": body.get("text", "")})
         if path == "/api/wipe":
             store.wipe()
             return self._send(200, {"ok": True})
