@@ -61,7 +61,8 @@ class AgentTests(unittest.TestCase):
         llm.chat_json = FakeGemma([
             ("extract_findings", {}),  # repeat of the auto-sensed step: rejected as no progress
             ("recommend_care", {"triage": "GREEN", "advice_steps": ["rest"], "confidence": 0.9}),  # unsafe
-            ("recommend_care", {"triage": "RED", "advice_steps": ["go to hospital"], "confidence": 0.9}),
+            ("recommend_care", {"triage": "RED", "advice_steps": ["go to hospital"], "confidence": 0.9,
+                                "advice_local_language": "तुरंत अस्पताल जाएं"}),
             ("finish", {"summary": "done"}),
         ], findings)
         s = new_visit("severe headache blurred vision", {"sbp": 150, "dbp": 100}, pregnant=True)

@@ -1,31 +1,29 @@
 /*
- * Voice input and read-aloud, both offline.
+ * Voice input and read-aloud, both fully offline.
  *
- * Input: the browser records the microphone (MediaRecorder), decodes the
- * clip, resamples it to 16 kHz mono and encodes a PCM WAV, then POSTs it to
- * /api/transcribe, where Gemma 4 transcribes it locally with its native audio
- * encoder (no cloud speech API, no separate ASR model). Used for the visit
- * note and for answering the agent's questions, so a worker can keep their
- * hands on the patient.
+ * Input: listen() records the microphone, stops by itself ~1.3 s after the
+ * speaker goes quiet (energy-based voice-activity detection), resamples the
+ * clip to 16 kHz mono PCM WAV and POSTs it to /api/transcribe, where Gemma 4
+ * transcribes it locally with its native audio encoder and returns a CLEANED
+ * transcript: fillers (um, hmm, aah), false starts and repetitions removed,
+ * every clinical fact, negation and number kept. No cloud speech API.
  *
- * Recording stops by itself ~1.5 s after the speaker goes quiet (a simple
- * energy-based voice-activity detector), so the worker just talks. Gemma
- * returns a CLEANED transcript: fillers (um, hmm, aah), false starts and
- * repetitions removed, every clinical fact and number kept.
+ * Output: say() speaks text with the operating system's offline voices via
+ * /api/speak (Hindi, Telugu, Indian English) and resolves when playback
+ * ends; only if that is unavailable does it fall back to the browser's own
+ * speech synthesis.
  *
- * Output: speak() reads the care advice aloud with the operating system's
- * offline voices via /api/speak (Hindi, Telugu, English); only if that is
- * unavailable does it fall back to the browser's own speech synthesis.
+ * toggle() wires a mic button for one-shot dictation; the conversation mode
+ * (conversation.js) chains say() and listen() into a spoken dialogue.
  */
 
 const Voice = (() => {
-  let recorder = null;
-  let chunks = [];
+  let active = null;   // current recording: { stop() }
+  let playing = null;  // current audio element
 
-  /** Resample an AudioBuffer to 16 kHz mono and encode it as a base64 PCM16 WAV. */
+  /** Encode an audio Blob as a base64 16 kHz mono PCM WAV. */
   async function toWavBase64(blob) {
-    const raw = await blob.arrayBuffer();
-    const decoded = await new AudioContext().decodeAudioData(raw);
+    const decoded = await new AudioContext().decodeAudioData(await blob.arrayBuffer());
     const rate = 16000;
     const offline = new OfflineAudioContext(1, Math.ceil(decoded.duration * rate), rate);
     const src = offline.createBufferSource();
@@ -48,98 +46,121 @@ const Voice = (() => {
   }
 
   /**
-   * Toggle recording on a mic button. On stop, transcribe with Gemma and hand
-   * the text to onText. The button shows recording / transcribing states.
+   * Record until the speaker pauses, then return Gemma's cleaned transcript.
+   * onState("listening" | "transcribing") lets the UI show progress.
+   * Resolves "" if nothing was said within `maxWaitMs`.
    */
-  async function toggle(button, onText) {
-    if (window.SAHAYAK_REPLAY) { alert("Voice input runs on-device with Gemma 4. Clone the repo and run it locally to try it."); return; }
-    if (recorder && recorder.state === "recording") { recorder.stop(); return; }
-    let stream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch (err) {
-      alert("Microphone not available: " + err.message);
-      return;
-    }
-    chunks = [];
-    recorder = new MediaRecorder(stream);
-    // Voice-activity detection: stop ~1.5 s after speech ends (or after 45 s).
+  async function listen(onState = () => {}, maxWaitMs = 12000) {
+    if (window.SAHAYAK_REPLAY) throw new Error("Voice runs on-device with Gemma 4. Clone the repo and run it locally.");
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    const recorder = new MediaRecorder(stream);
+    const chunks = [];
+    recorder.ondataavailable = (e) => chunks.push(e.data);
     const ctx = new AudioContext();
     const analyser = ctx.createAnalyser();
     ctx.createMediaStreamSource(stream).connect(analyser);
     const buf = new Float32Array(analyser.fftSize);
     let spoke = false, quietSince = null;
     const started = Date.now();
+    const done = new Promise((resolve) => (recorder.onstop = resolve));
     const vad = setInterval(() => {
       analyser.getFloatTimeDomainData(buf);
       const rms = Math.sqrt(buf.reduce((a, x) => a + x * x, 0) / buf.length);
       if (rms > 0.02) { spoke = true; quietSince = null; } else if (spoke && !quietSince) quietSince = Date.now();
-      if ((spoke && quietSince && Date.now() - quietSince > 1500) || Date.now() - started > 45000) {
+      const elapsed = Date.now() - started;
+      if ((spoke && quietSince && Date.now() - quietSince > 1300) || elapsed > 45000 || (!spoke && elapsed > maxWaitMs)) {
         if (recorder.state === "recording") recorder.stop();
       }
-    }, 100);
-    recorder.ondataavailable = (e) => chunks.push(e.data);
-    recorder.onstop = async () => {
-      clearInterval(vad);
-      ctx.close();
-      stream.getTracks().forEach((t) => t.stop());
-      button.classList.remove("rec");
-      button.classList.add("busy");
-      button.textContent = "⋯ Gemma is cleaning up what you said";
-      try {
-        const audio = await toWavBase64(new Blob(chunks, { type: recorder.mimeType }));
-        const r = await fetch("/api/transcribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ audio }) });
-        const out = await r.json();
-        if (out.error) alert(out.error); else onText(out.text);
-      } catch (err) {
-        alert("Transcription failed: " + err.message);
-      } finally {
-        button.classList.remove("busy");
-        button.textContent = button.dataset.label;
-      }
-    };
+    }, 80);
+    active = { stop: () => recorder.state === "recording" && recorder.stop() };
     recorder.start();
-    button.dataset.label = button.dataset.label || button.textContent;
-    button.classList.add("rec");
-    button.textContent = "● Listening… (stops when you pause)";
+    onState("listening");
+    await done;
+    clearInterval(vad);
+    ctx.close();
+    stream.getTracks().forEach((t) => t.stop());
+    active = null;
+    if (!spoke) return "";
+    onState("transcribing");
+    const audio = await toWavBase64(new Blob(chunks, { type: recorder.mimeType }));
+    const r = await fetch("/api/transcribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ audio }) });
+    const out = await r.json();
+    if (out.error) throw new Error(out.error);
+    return out.text;
+  }
+
+  /** Stop an in-progress recording early (it will still be transcribed). */
+  function stopListening() { if (active) active.stop(); }
+
+  /** One-shot dictation on a mic button: click to talk, stops when you pause. */
+  async function toggle(button, onText) {
+    if (active) { stopListening(); return; }
+    const label = button.dataset.label || (button.dataset.label = button.textContent);
+    try {
+      const text = await listen((state) => {
+        button.classList.toggle("rec", state === "listening");
+        button.classList.toggle("busy", state === "transcribing");
+        button.textContent = state === "listening" ? "● Listening… (stops when you pause)" : "⋯ Gemma is cleaning up what you said";
+      });
+      if (text) onText(text);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      button.classList.remove("rec", "busy");
+      button.textContent = label;
+    }
   }
 
   const LANG = { Hindi: "hi-IN", Telugu: "te-IN", English: "en-IN" };
-  let playing = null;
 
-  /** Browser speech synthesis fallback (only used if on-device TTS is unavailable). */
-  function browserSpeak(text, language) {
-    const lang = LANG[language] || "en-IN";
-    const voices = speechSynthesis.getVoices().filter((v) => v.lang.replace("_", "-").startsWith(lang.slice(0, 2)));
-    const voice = voices.find((v) => v.localService) || voices[0];
-    if (!voice) { alert(`No ${language} voice available on this device.`); return; }
-    speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.voice = voice;
-    u.lang = voice.lang;
-    u.rate = 0.9;
-    speechSynthesis.speak(u);
+  /** Browser speech synthesis fallback; resolves when finished. */
+  function browserSay(text, language) {
+    return new Promise((resolve) => {
+      const lang = LANG[language] || "en-IN";
+      const voices = speechSynthesis.getVoices().filter((v) => v.lang.replace("_", "-").startsWith(lang.slice(0, 2)));
+      const voice = voices.find((v) => v.localService) || voices[0];
+      if (!voice) { resolve(); return; }
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.voice = voice;
+      u.lang = voice.lang;
+      u.onend = resolve;
+      u.onerror = resolve;
+      speechSynthesis.speak(u);
+    });
   }
 
-  /** Read text aloud in the family's language with the device's offline voices. Click again to stop. */
-  async function speak(text, language, button) {
-    if (playing) { playing.pause(); playing = null; if (button) button.textContent = "🔊 Read aloud"; return; }
-    if (window.SAHAYAK_REPLAY) { browserSpeak(text, language); return; }
-    if (button) button.textContent = "⋯ preparing voice";
+  /** Speak text with the device's offline voices; resolves when playback ends. */
+  async function say(text, language = "English") {
+    stopSpeaking();
+    if (!text) return;
+    if (window.SAHAYAK_REPLAY) return browserSay(text, language);
     try {
       const r = await fetch("/api/speak", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, language }) });
       if (!r.ok) throw new Error((await r.json()).error);
       const audio = new Audio(URL.createObjectURL(await r.blob()));
       playing = audio;
-      if (button) button.textContent = "■ Stop";
-      audio.onended = () => { playing = null; if (button) button.textContent = "🔊 Read aloud"; };
-      await audio.play();
+      await new Promise((resolve) => { audio.onended = resolve; audio.onerror = resolve; audio.onpause = resolve; audio.play().catch(resolve); });
     } catch (err) {
       console.warn("on-device TTS unavailable, using browser voices:", err);
-      if (button) button.textContent = "🔊 Read aloud";
-      browserSpeak(text, language);
+      await browserSay(text, language);
+    } finally {
+      playing = null;
     }
   }
 
-  return { toggle, speak };
+  function stopSpeaking() {
+    if (playing) { playing.pause(); playing = null; }
+    if (window.speechSynthesis) speechSynthesis.cancel();
+  }
+
+  /** Read-aloud button: click to play, click again to stop. */
+  async function speak(text, language, button) {
+    if (playing) { stopSpeaking(); return; }
+    if (button) button.textContent = "■ Stop";
+    await say(text, language);
+    if (button) button.textContent = "🔊 Read aloud";
+  }
+
+  return { listen, stopListening, toggle, say, speak, stopSpeaking };
 })();

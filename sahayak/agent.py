@@ -71,7 +71,8 @@ Each turn, choose exactly ONE tool:
   field = the vital it fills (rr, temp_c, sbp, dbp, hr, spo2) or "none" for a free-text clarification (e.g. a vague note: ask since when and what other symptoms).
 - recommend_care {triage, advice_steps, advice_local_language, followup_days, confidence, rationale}:
   triage GREEN (home care), YELLOW (clinic within 24h), RED (refer now). Never lower than the protocol level.
-  advice_steps: 2-5 short practical steps for the health worker. advice_local_language: the same advice for the family in the requested language.
+  advice_steps: 2-5 short practical steps for the health worker. advice_local_language: the same advice for the family in the
+  requested advice_language, written in that language's OWN SCRIPT (Telugu in తెలుగు script, Hindi in देवनागरी), simple words, never romanized.
   confidence: 0-1, how sure you are the triage is right.
 - refer_to_clinician {urgency, reason}: human handoff. Required for YELLOW or RED.
 - finish {summary}: close the visit when everything is done.

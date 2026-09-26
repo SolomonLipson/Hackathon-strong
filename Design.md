@@ -49,8 +49,14 @@ An ASHA worker in rural Telangana sees a sick child at home. There is often no s
 - A vague note (at most one symptom, no danger sign, no duration) requires one clarifying question. The free-text answer triggers re-extraction.
 - Temperature bands: RED below 35.0 °C (hypothermia) or at 41 °C and above (hyperpyrexia), YELLOW for 35.0–35.9 °C or 39.5 °C and above.
 
+### Talk to Sahayak ([conversation.js](sahayak/static/conversation.js), [intake.py](sahayak/intake.py))
+This is a hands-free, turn-taking voice dialogue. Sahayak speaks, then the mic opens and closes when the worker pauses, and Gemma transcribes. `/api/intake` has Gemma turn everything said so far into the visit form (name, age, sex, pregnancy, vitals, clinical note) and name what is missing. Sahayak asks for it out loud, then runs the normal agent. It announces protocol findings and emergency referrals, speaks the agent's questions, and feeds spoken answers back. At the end it speaks the triage and reads the family's advice in their language. A small number-parsing backup catches plainly spoken ages that the model skips.
+
+### Advice in the family's script
+The checker rejects advice written in romanized "Tenglish" or "Hinglish". At least half the letters must be in the Telugu (U+0C00–0C7F) or Devanagari (U+0900–097F) block, so Gemma rewrites it. This is skipped in rules-only mode.
+
 ### Read-aloud ([tts.py](sahayak/tts.py))
-Chrome often exposes no Indian-language voices, so speech is synthesized by the operating system (macOS `say`: Lekha for Hindi, Geeta for Telugu; espeak-ng on Linux) and streamed to the page as WAV. The browser's voices are only a fallback.
+Chrome often exposes no Indian-language voices, so speech is synthesized by the operating system (macOS `say`: Lekha for Hindi, Geeta for Telugu; espeak-ng on Linux) and streamed to the page as WAV at the voice's natural rate. The most natural installed variant is picked automatically (Premium > Enhanced > compact; Enhanced voices are a one-time download and then work offline). The browser's voices are only a fallback.
 
 ### Privacy
 - Everything stays in one local SQLite file. Nothing is sent anywhere except the outbox.

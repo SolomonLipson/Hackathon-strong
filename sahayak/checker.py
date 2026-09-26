@@ -21,6 +21,15 @@ from .tools import TOOL_NAMES, AgentState
 
 MAX_QUESTIONS = 3
 
+# Unicode blocks the family's advice must be written in (not romanized "Tenglish"/"Hinglish").
+SCRIPTS = {"Telugu": ((0x0C00, 0x0C7F), "Telugu (తెలుగు)"), "Hindi": ((0x0900, 0x097F), "Devanagari (देवनागरी)")}
+
+
+def _script_share(text: str, block: tuple[int, int]) -> float:
+    """Fraction of the letters in `text` that belong to the given Unicode block."""
+    letters = [c for c in text if c.isalpha()]
+    return sum(block[0] <= ord(c) <= block[1] for c in letters) / len(letters) if letters else 0.0
+
 
 def unanswered(state: AgentState) -> list[dict]:
     """Critical missing vitals that have not already been asked about."""
@@ -85,6 +94,12 @@ def precheck(state: AgentState, tool: str, args: dict) -> dict:
                     f"REJECTED: protocol requires at least {floor} ({reasons}). You proposed {triage}. Triage can never be lowered below the rules."}
         if not args.get("advice_steps"):
             return {"ok": False, "feedback": "recommend_care needs concrete 'advice_steps'."}
+        script = SCRIPTS.get(state.language)
+        local = args.get("advice_local_language") or ""
+        if script and not state.degraded and _script_share(local, script[0]) < 0.5:
+            return {"ok": False, "feedback":
+                    f"REJECTED: advice_local_language must be written in {state.language} using {script[1]} script "
+                    f"(not English letters / transliteration). Rewrite it in {script[1]} script."}
 
     if tool == "finish":
         missing = []

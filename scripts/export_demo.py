@@ -35,10 +35,10 @@ def main(ids: list[str]) -> None:
     handoffs = [{**h, "name": e["patient"]["name"], "age_years": e["patient"]["age_years"]}
                 for e in encounters for h in e["handoffs"]]
     DOCS.mkdir(exist_ok=True)
-    for f in ("index.html", "app.js", "voice.js", "style.css"):
+    for f in ("index.html", "app.js", "voice.js", "conversation.js", "style.css"):
         shutil.copy(config.STATIC_DIR / f, DOCS / f)
     html = (DOCS / "index.html").read_text()
-    html = html.replace('href="/style.css"', 'href="style.css"').replace('src="/voice.js"', 'src="voice.js"').replace(
+    html = html.replace('href="/style.css"', 'href="style.css"').replace('src="/voice.js"', 'src="voice.js"').replace('src="/conversation.js"', 'src="conversation.js"').replace(
         '<script src="/app.js"></script>', '<script>window.SAHAYAK_REPLAY = "demo-data.json";</script>\n<script src="app.js"></script>')
     (DOCS / "index.html").write_text(html)
     (DOCS / "demo-data.json").write_text(json.dumps(

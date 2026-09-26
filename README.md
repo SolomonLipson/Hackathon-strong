@@ -48,9 +48,13 @@ Run the accuracy evaluation (19 labelled vignettes, Gemma vs rules-only, results
 python3 eval/run_eval.py
 ```
 
+**For natural voices (recommended, one-time, then offline):** macOS System Settings → Accessibility → Spoken Content → System voice → Manage Voices, then download **Geeta (Enhanced)** for Telugu, **Lekha (Enhanced)** for Hindi, and **Rishi (Enhanced)** for Indian English. Sahayak automatically uses the best installed variant (Premium > Enhanced > compact).
+
 Voice input needs a browser microphone. `http://127.0.0.1` counts as a secure origin, so Chrome allows it offline.
 
 ## Demo script (3 minutes)
+
+0. Click **🎙 Talk to Sahayak** for a hands-free spoken conversation. Sahayak greets you, you describe the patient, it asks for anything missing, speaks its findings and questions, takes your spoken answers, and finally reads the family's advice in Telugu or Hindi. Everything is on-device.
 
 1. Turn Wi-Fi off. Click **🎤 Speak the note** and just talk, for example *"Bachchi ko do din se tez bukhar hai, behosh jaisi hai, kuch pee nahi rahi"*. Recording stops when you pause, and Gemma returns a cleaned transcript without fillers.
 2. Start the agent. Within about 10 s the SENSE phase shows the RED danger signs with Gemma's quoted evidence, and the **emergency referral is already open**. Gemma then writes the care plan with Telugu or Hindi advice. Press **🔊 Read aloud** (on-device voice).
@@ -88,7 +92,9 @@ sahayak/
   sync.py       store-and-forward outbox with back-off + idempotency keys
   server.py     stdlib HTTP server + JSON API
   static/       offline single-page UI (no CDN)
-  tts.py        offline read-aloud (macOS `say` voices / espeak-ng)
+  tts.py        offline read-aloud (best installed macOS voice / espeak-ng)
+  intake.py     voice mode: Gemma turns a spoken description into the visit form
+  static/conversation.js  "Talk to Sahayak" hands-free spoken dialogue
   static/voice.js  mic capture + auto-stop on silence -> 16 kHz WAV -> Gemma cleaned transcript; read-aloud playback
 tests/          loop and safety tests with a scripted fake model
 eval/           labelled vignettes + accuracy report (Gemma vs rules-only)

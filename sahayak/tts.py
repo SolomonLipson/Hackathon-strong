@@ -31,6 +31,26 @@ class TTSUnavailable(RuntimeError):
     """Raised when no offline speech engine can speak the requested language."""
 
 
+_voices_cache: list[str] | None = None
+
+
+def best_voice(base: str) -> str:
+    """Pick the most natural installed variant of a macOS voice: Premium > Enhanced > compact.
+
+    Enhanced/Premium voices are a one-time download (System Settings > Accessibility >
+    Spoken Content > System voice > Manage Voices) and then work fully offline.
+    """
+    global _voices_cache
+    if _voices_cache is None:
+        out = subprocess.run(["say", "-v", "?"], capture_output=True, text=True).stdout
+        _voices_cache = [line.split("  ")[0].strip() for line in out.splitlines()]
+    for quality in ("(Premium)", "(Enhanced)"):
+        name = f"{base} {quality}"
+        if name in _voices_cache:
+            return name
+    return base
+
+
 @logged(log)
 def synthesize(text: str, language: str) -> bytes:
     """Return WAV audio of `text` spoken in `language`, generated on-device."""
@@ -40,8 +60,8 @@ def synthesize(text: str, language: str) -> bytes:
     with tempfile.TemporaryDirectory() as tmp:
         out = Path(tmp) / "speech.wav"
         if shutil.which("say"):
-            voice = config.TTS_VOICES.get(language, config.TTS_VOICES["English"])
-            cmd = ["say", "-v", voice, "-r", "165", "-o", str(out), "--file-format=WAVE", "--data-format=LEI16@22050", text]
+            voice = best_voice(config.TTS_VOICES.get(language, config.TTS_VOICES["English"]))
+            cmd = ["say", "-v", voice, "-o", str(out), "--file-format=WAVE", "--data-format=LEI16@24000", text]
         elif shutil.which("espeak-ng"):
             cmd = ["espeak-ng", "-v", ESPEAK_LANG.get(language, "en"), "-s", "150", "-w", str(out), text]
         else:

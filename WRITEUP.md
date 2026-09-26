@@ -21,6 +21,8 @@ Sahayak is a local web app: Python standard library, SQLite, and Gemma 4 through
 
 E2B is the low-memory fallback.
 
+**Talk to Sahayak** makes the whole visit a spoken conversation. The agent greets the worker, Gemma turns their description into the visit form, and it asks aloud for anything missing. It then speaks findings, emergency referrals, and questions, takes spoken answers, and reads the family's advice in their language (enforced native script, not romanized).
+
 ### The agent loop
 
 - **SENSE (automatic whenever the picture is stale).** Gemma reads the note, plus any answers, through a **per-sign checklist**: for each of 15 danger signs it must answer yes, no, or unclear, using plain-language definitions with local-language examples, and must quote the words that support each "yes". A **negation-aware keyword net** in English, Hinglish, Devanagari, and Telugu runs alongside and is unioned in, so a model miss can never lower urgency while "no chest pain" or "saans nahi phool rahi" never raises it. Local history is loaded and the deterministic danger-sign rules run. A RED result opens an emergency referral *within seconds, before any model reasoning*.
@@ -37,7 +39,7 @@ The agent never guesses:
 - **Implausible readings.** If a vital can't be real (30 °C in a talking patient), it asks for a re-measure instead of triggering an emergency.
 - **Vague notes.** "Not sure, low energy" gets a clarifying question, and the answer is re-read by Gemma.
 
-It **hands off to a clinician** for RED, YELLOW, low confidence, repeated rejections, or an exhausted 12-step budget, with a specific reason (for example "Emergency: unable to breastfeed; unusually sleepy"). Every question and answer works by voice.
+It **hands off to a clinician** for RED, YELLOW, low confidence, repeated rejections, or an exhausted 12-step budget, with a specific reason. Every question and answer works by voice.
 
 ### Offline error recovery and local state
 
@@ -65,8 +67,7 @@ The rules-only misses are exactly the cases that need clinical language understa
 ## Why these technical choices
 
 - **Gemma 4 E4B/E2B QAT.** These edge models fit on a clinic laptop yet handle Hinglish notes, native-script speech, and Telugu counselling.
-- **Checklist extraction with evidence.** Asking a small model "list the danger signs" missed everyday phrasing. Forcing a verdict per sign, with definitions and quotes, fixed the misses we saw and makes each finding auditable.
-- **JSON-schema outputs.** Every model decision is machine-checkable, which is what lets a deterministic checker sit in the loop.
+- **Checklist extraction with evidence.** Forcing a verdict per sign, with definitions and quotes, fixed the misses of "list the danger signs" and makes each finding auditable.
 - **Model as planner, rules as the floor.** Gemma contributes language, judgment, and counselling (it may escalate above the rules), while auditable rules guarantee the minimum. This is the right trust boundary for health.
 
 ## Challenges we overcame

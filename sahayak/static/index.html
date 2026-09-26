@@ -34,6 +34,8 @@
 
 <main>
   <section class="col left">
+    <button id="convoBtn" class="talk">🎙 Talk to Sahayak<small>hands-free voice conversation · offline</small></button>
+    <div class="or">or fill in the visit</div>
     <h2>New visit</h2>
     <form id="visitForm">
       <div class="row">
@@ -130,7 +132,17 @@
     <p class="disclaimer">Demo protocol for a hackathon, not validated medical advice.</p>
   </section>
 </main>
+<div id="convo" class="convo" hidden>
+  <div class="convo-head">
+    <div class="orb idle" id="convoOrb"></div>
+    <div class="convo-title"><b>Talk to Sahayak</b><div id="convoState" class="hint">Starting…</div></div>
+    <label class="convo-lang">Family language<select id="convoLang"><option>Telugu</option><option>Hindi</option><option>English</option></select></label>
+    <button id="convoEnd" class="pill toggle">End</button>
+  </div>
+  <div id="convoLog" class="convo-log"></div>
+</div>
 <script src="/voice.js"></script>
 <script src="/app.js"></script>
+<script src="/conversation.js"></script>
 </body>
 </html>

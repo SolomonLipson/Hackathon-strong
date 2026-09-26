@@ -15,6 +15,7 @@ default, so the whole app runs on an offline laptop. Routes:
   POST /api/handoffs/<id>/ack     clinician acknowledges a handoff
   POST /api/transcribe {audio}    voice input: base64 16 kHz WAV -> text (Gemma 4 audio)
   POST /api/speak {text, language} read-aloud: offline OS speech -> WAV
+  POST /api/intake {transcript}   voice mode: Gemma turns spoken description into a visit form
   POST /api/wipe                  privacy: permanently delete all patient data on this device
   POST /api/network {online}      simulate connectivity
   POST /api/model {enabled}       simulate the local model crashing
@@ -27,7 +28,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import threading
 
-from . import agent, config, llm, store, sync, tts
+from . import agent, config, intake, llm, store, sync, tts
 from .log import get_logger
 
 log = get_logger("server")
@@ -100,6 +101,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, tts.synthesize(body.get("text", ""), body.get("language", "English")), "audio/wav")
             except tts.TTSUnavailable as err:
                 return self._send(503, {"error": str(err)})
+        if path == "/api/intake":
+            try:
+                return self._send(200, intake.extract(body.get("transcript", "")))
+            except llm.LLMUnavailable as err:
+                return self._send(503, {"error": f"Voice mode needs the local model: {err}"})
         if path == "/api/wipe":
             store.wipe()
             return self._send(200, {"ok": True})
