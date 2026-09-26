@@ -25,8 +25,8 @@ const Convo = (() => {
 
   const PHRASES = {
     English: {
-      greet: "Namaste! I am Sahayak, your health assistant. I work fully on this device, so everything you tell me stays private. Don't worry, we will go through this together. Please tell me about the patient: their name, their age, and what is troubling them.",
-      ack: "I'm sorry to hear that. Thank you for telling me. Let me check this carefully.",
+      greet: "Namaste, I'm Sahayak, your health helper. Who are we seeing today, and what's troubling them?",
+      ack: "I'm sorry to hear that. Let's look into it together.",
       noage: "That's okay, I will continue without the age.",
       got: (f) => `Got it${f.name ? ", " + f.name : ""}${f.age_years != null ? ", " + f.age_years + " years" : ""}.`,
       name: "What is the patient's name?", age: "How old is the patient?", sex: "Is the patient female, male, or other?",
@@ -37,8 +37,8 @@ const Convo = (() => {
       RED: "Red. Take the patient to hospital now.", YELLOW: "Yellow. See a doctor within 24 hours.", GREEN: "Green. Care at home, with follow-up.",
     },
     Telugu: {
-      greet: "నమస్తే! నేను సహాయక్, మీ ఆరోగ్య సహాయకుడిని. నేను పూర్తిగా ఈ పరికరంలోనే పనిచేస్తాను, కాబట్టి మీరు చెప్పేది అంతా గోప్యంగా ఉంటుంది. కంగారు పడకండి, మనం కలిసి చూద్దాం. రోగి గురించి చెప్పండి: పేరు, వయస్సు, మరియు ఏమి ఇబ్బంది ఉంది.",
-      ack: "అయ్యో, అది విని బాధగా ఉంది. చెప్పినందుకు ధన్యవాదాలు. నేను జాగ్రత్తగా పరిశీలిస్తాను.",
+      greet: "నమస్తే, నేను సహాయక్. ఈ రోజు ఎవరిని చూస్తున్నాం? వారి పేరు, వయస్సు, ఇబ్బంది ఏమిటో చెప్పండి.",
+      ack: "అయ్యో, బాధగా ఉంది. కలిసి చూద్దాం.",
       noage: "పర్వాలేదు, వయస్సు లేకుండానే కొనసాగిస్తాను.",
       got: (f) => `సరే${f.name ? ", " + f.name : ""}${f.age_years != null ? ", " + f.age_years + " ఏళ్లు" : ""}.`,
       name: "రోగి పేరు ఏమిటి?", age: "రోగి వయస్సు ఎంత?", sex: "రోగి ఆడవారా, మగవారా, లేక ఇతరులా?",
@@ -49,8 +49,8 @@ const Convo = (() => {
       RED: "ఎరుపు. రోగిని వెంటనే ఆసుపత్రికి తీసుకెళ్లండి.", YELLOW: "పసుపు. 24 గంటల్లో డాక్టర్‌ను చూడాలి.", GREEN: "ఆకుపచ్చ. ఇంట్లోనే సంరక్షణ, తర్వాత మళ్ళీ చూడాలి.",
     },
     Hindi: {
-      greet: "नमस्ते! मैं सहायक हूँ, आपका स्वास्थ्य सहायक। मैं पूरी तरह इसी डिवाइस पर काम करता हूँ, इसलिए आपकी हर बात गोपनीय रहेगी। घबराइए मत, हम साथ मिलकर देखेंगे। मरीज़ के बारे में बताइए: नाम, उम्र, और क्या तकलीफ़ है।",
-      ack: "यह सुनकर दुख हुआ। बताने के लिए धन्यवाद। मैं ध्यान से जाँच करता हूँ।",
+      greet: "नमस्ते, मैं सहायक हूँ। आज किसे देख रहे हैं? उनका नाम, उम्र और क्या तकलीफ़ है, बताइए।",
+      ack: "यह सुनकर दुख हुआ। चलिए साथ में देखते हैं।",
       noage: "कोई बात नहीं, मैं उम्र के बिना आगे बढ़ता हूँ।",
       got: (f) => `ठीक है${f.name ? ", " + f.name : ""}${f.age_years != null ? ", " + f.age_years + " साल" : ""}.`,
       name: "मरीज़ का नाम क्या है?", age: "मरीज़ की उम्र कितनी है?", sex: "मरीज़ महिला है, पुरुष है, या अन्य?",
@@ -92,7 +92,7 @@ const Convo = (() => {
   async function workerSays() {
     if (!on) return "";
     try {
-      const text = await Voice.listen((s) => on && setState(s));
+      const text = await Voice.listen((s) => on && setState(s), 12000, lang());
       if (text) bubble("you", text);
       return text;
     } catch (err) {
@@ -148,7 +148,7 @@ const Convo = (() => {
         const known = [form.name, form.age_years != null ? `${form.age_years} y` : null, { F: "female", M: "male", O: "other" }[form.sex],
           form.pregnant ? "pregnant" : null, ...Object.entries(form.vitals || {}).map(([k, v]) => `${k} ${v}`)].filter(Boolean).join(" · ");
         bubble("form", `📝 ${known || "–"}${form.clinical_note ? " · " + form.clinical_note : ""}`);
-        if (!acknowledged && form.clinical_note) { acknowledged = true; await agentSays(T("ack")); }
+        if (!acknowledged && form.clinical_note && form.clinical_note.split(/\s+/).length >= 3) { acknowledged = true; await agentSays(T("ack")); }
       }
       const optional = { name: 1, sex: 1 };  // asked at most once
       const open = (form?.missing || ["age", "complaint"]).filter((f) => (tries[f] || 0) < (optional[f] ? 1 : 2));

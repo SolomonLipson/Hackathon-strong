@@ -50,7 +50,7 @@ const Voice = (() => {
    * onState("listening" | "transcribing") lets the UI show progress.
    * Resolves "" if nothing was said within `maxWaitMs`.
    */
-  async function listen(onState = () => {}, maxWaitMs = 12000) {
+  async function listen(onState = () => {}, maxWaitMs = 12000, language = null) {
     if (window.SAHAYAK_REPLAY) throw new Error("Voice runs on-device with Gemma 4. Clone the repo and run it locally.");
     const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
     const recorder = new MediaRecorder(stream);
@@ -83,7 +83,7 @@ const Voice = (() => {
     if (!spoke) return "";
     onState("transcribing");
     const audio = await toWavBase64(new Blob(chunks, { type: recorder.mimeType }));
-    const r = await fetch("/api/transcribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ audio }) });
+    const r = await fetch("/api/transcribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ audio, language }) });
     const out = await r.json();
     if (out.error) throw new Error(out.error);
     return out.text;

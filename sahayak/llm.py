@@ -18,6 +18,7 @@ audio encoder (no separate ASR model, no cloud).
 """
 
 import json
+import re
 import time
 import urllib.error
 import urllib.request
@@ -127,14 +128,20 @@ def chat_json(system: str, user: str, schema: dict, models: list[str] | None = N
 
 
 TRANSCRIBE_PROMPT = (
-    "Transcribe this {secs:.1f}-second audio clip. Write ONLY the words the speaker actually says, in the language and "
-    "script they speak (English, Hindi, Telugu or mixed). Drop filler sounds (um, uh, hmm, aah) and immediate word "
-    "repetitions. Write numbers as digits. NEVER add, guess or complete anything that was not spoken: a short clip gives "
-    "a short transcript (about {words} words at most). If nothing intelligible is said, output an empty line."
+    "Listen to this {secs:.1f}-second recording and write down exactly what the speaker says.{lang_hint} "
+    "Drop filler sounds (um, uh, hmm, aah) and repeated words. Write numbers as digits. Do not add anything that was "
+    "not said, do not describe the audio, and do not answer or comment. If no clear speech is heard, output nothing."
 )
+LANG_HINT = {
+    "Telugu": " The speaker is most likely speaking Telugu (maybe mixed with English): write Telugu words in Telugu script (తెలుగు), never in English letters.",
+    "Hindi": " The speaker is most likely speaking Hindi (maybe mixed with English): write Hindi words in Devanagari (हिन्दी), never in English letters.",
+    "English": " The speaker is most likely speaking English (Indian accent).",
+}
+# Signs that the model talked ABOUT the audio instead of transcribing it.
+_META = re.compile(r"(transcri|audio|recording|clip|write only|i'?m sorry|i cannot|i can'?t|no speech|not provided|speaker)", re.I)
 
 
-def transcribe(wav_b64: str) -> tuple[str, str]:
+def transcribe(wav_b64: str, language: str | None = None) -> tuple[str, str]:
     """Speech-to-text with Gemma 4 audio input. Returns (text, model). Raises LLMUnavailable."""
     if not _enabled:
         raise LLMUnavailable("local model disabled (simulated crash)")
@@ -145,13 +152,16 @@ def transcribe(wav_b64: str) -> tuple[str, str]:
             "model": model, "stream": False, "think": False,
             "keep_alive": config.LLM_KEEP_ALIVE, "options": _options(0),
             # Ollama passes audio clips to Gemma 4 through the multimodal "images" field.
-            "messages": [{"role": "user", "content": TRANSCRIBE_PROMPT.format(secs=secs, words=max(3, int(secs * 3.5))),
+            "messages": [{"role": "user", "content": TRANSCRIBE_PROMPT.format(secs=secs, lang_hint=LANG_HINT.get(language or "", "")),
                           "images": [wav_b64]}],
         }
         log.info("gemma transcribe model=%s audio_bytes=%d (inline audio stripped from log)", model, len(wav_b64) * 3 // 4)
         t0 = time.monotonic()
         try:
             text = _post("/api/chat", body, config.LLM_TIMEOUT_S)["message"]["content"].strip()
+            if _META.search(text):  # the model described/refused instead of transcribing: treat as not heard
+                log.warning("discarding meta transcript: %s", text)
+                return "", model
             words = text.split()
             if len(words) > secs * 5 + 4:  # physically impossible speaking rate: the model made things up
                 log.warning("transcript too long for %.1fs clip (%d words); truncating", secs, len(words))

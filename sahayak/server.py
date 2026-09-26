@@ -93,7 +93,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, {"ok": True})
         if path == "/api/transcribe":
             try:
-                text, model = llm.transcribe(body.get("audio", ""))
+                text, model = llm.transcribe(body.get("audio", ""), body.get("language"))
                 return self._send(200, {"text": text, "model": model})
             except llm.LLMUnavailable as err:
                 return self._send(503, {"error": f"Voice needs the local model: {err}. Please type instead."})

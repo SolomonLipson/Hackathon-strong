@@ -70,7 +70,8 @@ def extract(transcript: str) -> dict:
         form["sex"] = "F"
     # What is still missing is decided by code, not by the model, so the
     # conversation never starts a visit without the essentials.
-    note = (form.get("clinical_note") or "").strip()
+    note = re.sub(r"^(worker|sahayak)\s*:\s*", "", (form.get("clinical_note") or "").strip(), flags=re.I)
+    form["clinical_note"] = note
     form["missing"] = [field for field, absent in (
         ("name", not form.get("name")),
         ("age", form.get("age_years") is None),
