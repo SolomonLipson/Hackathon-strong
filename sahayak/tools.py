@@ -182,7 +182,7 @@ def get_patient_history(state: AgentState, args: dict) -> dict:
     """Load previous visits of this patient from the local store."""
     rows = store.patient_history(state.patient["id"], exclude=state.encounter_id)
     state.history = [
-        {"when": r["created_at"], "triage": r["triage"],
+        {"days_ago": round((time.time() - r["created_at"]) / 86400, 1), "triage": r["triage"],
          "summary": (r.get("findings") or {}).get("summary"),
          "follow_up": (r.get("plan") or {}).get("followup_days")}
         for r in rows

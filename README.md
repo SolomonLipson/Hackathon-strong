@@ -15,6 +15,10 @@ Sahayak ("helper") supports a community health worker (ASHA) during a home visit
 - It **protects privacy**: names are masked on screen with one click, synced records are de-identified, and **Wipe data** erases the device.
 - It **doubts bad readings**: a physiologically implausible vital, such as 30 °C in a talking patient, is not acted on. The agent asks for a re-measure. A vague note ("not sure, low energy") gets a clarifying question.
 
+- It **remembers patients**: returning patients are found by name, and their earlier visits feed the agent. A **follow-ups** panel lists overdue, today's, and upcoming revisits, which close automatically when the patient is seen again.
+
+See **[TECHNICAL_GUIDE.md](TECHNICAL_GUIDE.md)** for the full technical explanation.
+
 The model never needs the internet, and the visit still completes if the model crashes.
 
 **Live demo (replay of real on-device runs):** https://solomonlipson.github.io/Hackathon-strong/

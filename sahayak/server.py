@@ -10,7 +10,9 @@ default, so the whole app runs on an offline laptop. Routes:
   POST /api/encounters            start a visit {patient, note, vitals, language}
   GET  /api/encounters/<id>       full visit incl. agent trace
   POST /api/encounters/<id>/answer  answer the agent's question {answer}
-  GET  /api/patients              known patients (for repeat visits)
+  GET  /api/patients?q=name       search returning patients (visit count, last triage)
+  GET  /api/followups             open follow-ups: overdue / today / upcoming
+  POST /api/followups/<id>/done   mark a follow-up done
   GET  /api/handoffs              open clinician handoffs
   POST /api/handoffs/<id>/ack     clinician acknowledges a handoff
   POST /api/transcribe {audio}    voice input: base64 16 kHz WAV -> text (Gemma 4 audio)
@@ -29,7 +31,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import threading
 
-from . import agent, config, intake, llm, store, sync, tts
+from urllib.parse import parse_qs, urlparse
+
+from . import agent, config, intake, llm, patients, store, sync, tts
 from .log import get_logger
 
 log = get_logger("server")
@@ -67,7 +71,10 @@ class Handler(BaseHTTPRequestHandler):
             enc = store.get_encounter(m.group(1))
             return self._send(200 if enc else 404, enc or {"error": "not found"})
         if path == "/api/patients":
-            return self._send(200, store.query("SELECT * FROM patients ORDER BY created_at DESC"))
+            q = parse_qs(urlparse(self.path).query).get("q", [""])[0]
+            return self._send(200, patients.search(q))
+        if path == "/api/followups":
+            return self._send(200, patients.followups())
         if path == "/api/handoffs":
             return self._send(200, store.query(
                 "SELECT h.*, p.name, p.age_years FROM handoffs h JOIN encounters e ON e.id=h.encounter_id "
@@ -78,14 +85,24 @@ class Handler(BaseHTTPRequestHandler):
         path = self.path.split("?")[0]
         body = self._json()
         if path == "/api/encounters":
-            pid = store.upsert_patient(body.get("patient") or {})
+            patient = body.get("patient") or {}
+            returning = bool(patient.get("id")) and store.one("SELECT id FROM patients WHERE id=?", (patient["id"],))
+            if not returning:
+                patient.pop("id", None)
+            pid = store.upsert_patient(patient)
             vitals = {k: float(v) for k, v in (body.get("vitals") or {}).items() if v not in (None, "")}
             eid = store.create_encounter(pid, body.get("note", ""), vitals, body.get("language") or "English")
+            if returning:
+                patients.complete_for_revisit(pid, eid)  # seeing the patient again closes their follow-ups
             agent.start_async(eid)
             return self._send(201, {"id": eid})
         m = re.fullmatch(r"/api/encounters/(\w+)/answer", path)
         if m:
             agent.answer(m.group(1), str(body.get("answer", "")))
+            return self._send(200, {"ok": True})
+        m = re.fullmatch(r"/api/followups/(\w+)/done", path)
+        if m:
+            patients.mark_done(m.group(1))
             return self._send(200, {"ok": True})
         m = re.fullmatch(r"/api/handoffs/(\w+)/ack", path)
         if m:
@@ -135,6 +152,7 @@ class Handler(BaseHTTPRequestHandler):
 def main() -> None:
     """Start sync worker, resume interrupted visits, serve forever."""
     store.conn()
+    patients.migrate()
     sync.start_worker()
     resumed = agent.resume_interrupted()
     if resumed:

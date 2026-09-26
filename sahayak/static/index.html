@@ -41,7 +41,8 @@
     <h2>New visit</h2>
     <form id="visitForm">
       <div class="row">
-        <label>Name<input name="name" required placeholder="Patient name"></label>
+        <label class="namebox">Name<input name="name" required placeholder="Patient name (type to find)" autocomplete="off">
+          <div id="patientSuggest" class="suggest" hidden></div></label>
         <label class="sm">Age (years)<input name="age_years" type="number" step="0.01" min="0" required></label>
       </div>
       <div class="row">
@@ -62,6 +63,7 @@
         <label>BP dia<input name="dbp" type="number"></label>
       </div>
       <input type="hidden" name="patient_id">
+      <div id="returning" class="returning" hidden></div>
       <button type="submit" class="primary">Start agent ▸</button>
     </form>
     <h2 class="mt">Visits</h2>
@@ -117,7 +119,9 @@
   </section>
 
   <section class="col right">
-    <h2>Clinician handoffs</h2>
+    <h2>Follow-ups</h2>
+    <div id="followups" class="followups"></div>
+    <h2 class="mt">Clinician handoffs</h2>
     <ul id="handoffs" class="list handoffs"></ul>
     <h2 class="mt">How it stays safe</h2>
     <ul class="notes">

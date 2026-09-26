@@ -64,6 +64,10 @@ macOS ships only robotic "compact" Telugu and Hindi voices, and Chrome often exp
 - The small E2B model handles conversational chores (intake form, translation) in about 1.5 s. E4B does the clinical reasoning.
 - The complaint note must be grounded in what was said about the illness. A name, age, or gender answer can never become the complaint.
 
+### Returning patients and follow-ups ([patients.py](sahayak/patients.py))
+- Name search (`/api/patients?q=`) shows visit count, last visit, and last triage. Choosing a patient attaches the new visit to their id, so SENSE loads their previous visits (with days ago) into Gemma's state.
+- `/api/followups` groups open follow-ups into overdue, today, and next 7 days. "Start visit" pre-fills the returning patient, and "Done" closes one. A new visit for a patient closes their open follow-ups automatically. A migration adds `done_ts` and `done_by_encounter`.
+
 ### Privacy
 - Everything stays in one local SQLite file. Nothing is sent anywhere except the outbox.
 - Outbox payloads are **de-identified**: patient id, age, sex, and pregnancy only. The name and village never leave the device.

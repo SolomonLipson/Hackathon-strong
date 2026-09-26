@@ -218,3 +218,21 @@ button.talk:hover { filter: brightness(1.08); }
 .orb.transcribing, .orb.thinking { background: var(--violet); animation: pulse 1.5s infinite; }
 .convo-pick { margin: 8px 0 0; display: flex; align-items: center; gap: 8px; }
 .convo-pick select { width: auto; flex: 1; margin: 0; }
+
+/* Returning patients & follow-ups */
+.namebox { position: relative; }
+.suggest { position: absolute; left: 0; right: -110px; top: 100%; z-index: 10; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.25); overflow: hidden; font-weight: 400; }
+.suggest button { display: flex; width: 100%; justify-content: space-between; gap: 8px; text-align: left; padding: 8px 10px; border: 0;
+  border-bottom: 1px solid var(--line); background: transparent; color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
+.suggest button:hover { background: var(--accent-soft); }
+.suggest .meta { color: var(--muted); font-size: 11px; }
+.returning { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: -2px 0 10px; padding: 7px 10px;
+  border-radius: 10px; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 700; }
+.returning button { border: 0; background: transparent; color: var(--muted); cursor: pointer; font: inherit; font-size: 12px; }
+.followups .grp { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; margin: 8px 0 4px; color: var(--muted); }
+.followups .grp.overdue { color: var(--red); } .followups .grp.today { color: var(--yellow); }
+.followups .fu { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin-bottom: 6px; font-size: 13px; }
+.followups .fu .top { display: flex; justify-content: space-between; gap: 6px; align-items: center; }
+.followups .fu .why { color: var(--muted); font-size: 12px; margin: 2px 0 6px; }
+.followups .fu .acts { display: flex; gap: 6px; }

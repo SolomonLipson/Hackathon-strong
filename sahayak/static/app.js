@@ -71,11 +71,11 @@ $("#visitForm").onsubmit = async (e) => {
   const btn = $("#visitForm button[type=submit]");
   btn.disabled = true;
   const { id } = await api("/api/encounters", {
-    patient: { name: f.name.value, age_years: parseFloat(f.age_years.value), sex: f.sex.value, pregnant: f.pregnant.checked },
+    patient: { id: f.patient_id.value || undefined, name: f.name.value, age_years: parseFloat(f.age_years.value), sex: f.sex.value, pregnant: f.pregnant.checked },
     note: f.note.value, vitals, language: f.language.value,
   });
   btn.disabled = false;
-  if (id) { e.target.reset(); select(id); }
+  if (id) { e.target.reset(); clearReturning(); select(id); }
 };
 
 $("#answerForm").onsubmit = async (e) => {
@@ -124,6 +124,71 @@ function select(id) {
   renderedSteps = { id: null, n: 0 };
   history.replaceState(null, "", `#v=${id}`);
   tick();
+}
+
+// ---- Returning patients ------------------------------------------------------------
+
+const ago = (ts) => { const d = Math.round((Date.now() / 1000 - ts) / 86400); return d <= 0 ? "today" : d === 1 ? "yesterday" : `${d} days ago`; };
+const until = (ts) => { const d = Math.round((ts - Date.now() / 1000) / 86400); return d < 0 ? `${-d} day(s) overdue` : d === 0 ? "due today" : `in ${d} day(s)`; };
+
+/** Fill the visit form with an existing patient so the new visit joins their history. */
+function useReturning(p) {
+  const f = $("#visitForm").elements;
+  f.patient_id.value = p.id || p.patient_id;
+  f.name.value = p.name;
+  if (p.age_years != null) f.age_years.value = p.age_years;
+  if (p.sex) f.sex.value = p.sex;
+  f.pregnant.checked = !!p.pregnant;
+  const info = p.visits != null ? `${p.visits} earlier visit(s)${p.last_triage ? " · last " + p.last_triage : ""}` : "follow-up visit";
+  $("#returning").innerHTML = `<span>↺ Returning patient · ${esc(info)}. Gemma will see their history.</span><button type="button" title="Treat as a new patient">✕ new</button>`;
+  $("#returning").hidden = false;
+  $("#returning button").onclick = clearReturning;
+  $("#patientSuggest").hidden = true;
+  f.note.focus();
+}
+
+function clearReturning() {
+  $("#visitForm").elements.patient_id.value = "";
+  $("#returning").hidden = true;
+}
+
+let suggestTimer = null;
+$("#visitForm").elements.name.addEventListener("input", (e) => {
+  clearReturning();  // editing the name means it may be someone else
+  clearTimeout(suggestTimer);
+  const q = e.target.value.trim();
+  if (q.length < 2 || REPLAY) { $("#patientSuggest").hidden = true; return; }
+  suggestTimer = setTimeout(async () => {
+    const found = await api(`/api/patients?q=${encodeURIComponent(q)}`);
+    const box = $("#patientSuggest");
+    if (!found.length) { box.hidden = true; return; }
+    box.innerHTML = found.map((p, i) => `<button type="button" data-i="${i}"><span>${esc(shownName(p.name))} <span class="meta">${p.age_years ?? "?"}y ${p.sex || ""}</span></span>
+      <span class="meta">${p.visits} visit(s)${p.last_visit ? " · " + ago(p.last_visit) : ""}${p.last_triage ? " · " + p.last_triage : ""}</span></button>`).join("");
+    box.querySelectorAll("button").forEach((b) => (b.onclick = () => useReturning(found[+b.dataset.i])));
+    box.hidden = false;
+  }, 200);
+});
+document.addEventListener("click", (e) => { if (!e.target.closest(".namebox")) $("#patientSuggest").hidden = true; });
+
+// ---- Follow-ups -------------------------------------------------------------------
+
+async function refreshFollowups() {
+  if (REPLAY) { $("#followups").innerHTML = `<div class="muted">Follow-ups appear here in the live app.</div>`; return; }
+  const fu = await api("/api/followups");
+  if (!changed("followups", [fu, hideNames])) return;
+  const item = (r) => `<div class="fu"><div class="top"><b>${esc(shownName(r.name))} <span class="muted">${r.age_years ?? "?"}y</span></b>
+      <span class="badge ${r.triage || ""}">${esc(until(r.due_ts))}</span></div>
+    <div class="why">${esc(r.reason)}${r.summary ? " · " + esc(r.summary) : ""}</div>
+    <div class="acts"><button class="pill toggle" data-visit="${r.id}">▸ Start visit</button><button class="pill toggle" data-done="${r.id}">✓ Done</button></div></div>`;
+  const all = [...fu.overdue, ...fu.today, ...fu.upcoming];
+  $("#followups").innerHTML = all.length ? [["overdue", "Overdue"], ["today", "Due today"], ["upcoming", "Next 7 days"]]
+    .filter(([k]) => fu[k].length).map(([k, label]) => `<div class="grp ${k}">${label} (${fu[k].length})</div>${fu[k].map(item).join("")}`).join("")
+    : `<div class="muted">No follow-ups due this week</div>`;
+  $("#followups").querySelectorAll("[data-visit]").forEach((b) => (b.onclick = () => {
+    useReturning(all.find((r) => r.id === b.dataset.visit));
+    $("#visitForm").scrollIntoView({ behavior: "smooth" });
+  }));
+  $("#followups").querySelectorAll("[data-done]").forEach((b) => (b.onclick = async () => { await api(`/api/followups/${b.dataset.done}/done`, {}); refreshFollowups(); }));
 }
 
 // ---- Status bar & lists -------------------------------------------------------
@@ -240,6 +305,8 @@ function renderFindings(e) {
     grp("Unclear: worth asking", (f.unclear_signs || []).map((c) => `<span class="chip unclear">? ${esc(LABEL(c))}</span>`).join("")) +
     grp("Symptoms", (f.symptoms || []).map((s) => `<span class="chip">${esc(s)}</span>`).join("")) +
     grp("Ruled out", (f.negated || []).map((s) => `<span class="chip neg">${esc(LABEL(s))}</span>`).join("")) +
+    grp("Previous visits", ([...e.steps].reverse().find((s) => s.tool === "get_patient_history")?.detail?.previous_visits || [])
+      .map((v) => `<span class="chip">${v.triage ? `<b class="badge ${v.triage}">${v.triage}</b> ` : ""}${v.days_ago < 1 ? "today" : Math.round(v.days_ago) + " d ago"}${v.summary ? ": " + esc(v.summary.slice(0, 60)) : ""}</span>`).join("")) +
     grp("Duration", f.duration_days != null ? `<span class="chip">${f.duration_days < 1 ? "since today" : f.duration_days + " day(s)"}</span>` : "") +
     (f.summary ? `<div class="summary">${esc(f.summary)}</div>` : "") +
     `<div class="hint">read by ${esc(f.source || "")}</div>`;
@@ -321,7 +388,7 @@ async function tick() {
   clearTimeout(timer);
   let busy = false;
   try {
-    const [, visits, e] = await Promise.all([refreshStatus(), refreshLists(), refreshDetail()]);
+    const [, visits, e] = await Promise.all([refreshStatus(), refreshLists(), refreshDetail(), refreshFollowups()]);
     busy = (e && e.status === "running") || (visits || []).some((v) => v.status === "running");
   } catch (err) { console.error(err); }
   timer = setTimeout(tick, busy || REPLAY ? 700 : 3000);
