@@ -136,7 +136,7 @@ TRANSCRIBE_PROMPT = (
 LANG_HINT = {
     "Telugu": " The speaker may speak English, Telugu or a mix: write English words in English and Telugu words in Telugu script (తెలుగు), never Telugu in English letters.",
     "Hindi": " The speaker may speak English, Hindi or a mix: write English words in English and Hindi words in Devanagari (हिन्दी), never Hindi in English letters.",
-    "English": " The speaker is most likely speaking English with an Indian accent; names are usually Indian names.",
+    "English": " The speaker is most likely speaking English with an Indian accent.",
 }
 # Signs that the model talked ABOUT the audio instead of transcribing it.
 _META = re.compile(r"(transcri|audio|recording|clip|write only|i'?m sorry|i cannot|i can'?t|no speech|not provided|speaker)", re.I)
