@@ -29,10 +29,42 @@ def unanswered(state: AgentState) -> list[dict]:
             if a["field"] not in asked]
 
 
+def open_items(state: AgentState) -> list[str]:
+    """Checklist items not yet done, in the order the protocol expects them."""
+    items = []
+    if not state.findings:
+        items.append("extract_findings")
+    if state.rules is None:
+        items.append("check_danger_signs")
+    if state.history is None:
+        items.append("get_patient_history")
+    asks = unanswered(state)
+    if asks and len(state.answers) < MAX_QUESTIONS:
+        items.append(f"ask_health_worker(field={asks[0]['field']})")
+    if not state.plan or (state.rules and not protocols.level_at_least(state.plan["triage"], state.rules["level"])):
+        items.append("recommend_care")
+    elif state.plan["triage"] in ("RED", "YELLOW") and not state.referral:
+        items.append("refer_to_clinician")
+    return items or ["finish"]
+
+
 def precheck(state: AgentState, tool: str, args: dict) -> dict:
     """Validate a proposed tool call before it runs."""
     if tool not in TOOL_NAMES:
         return {"ok": False, "feedback": f"Unknown tool '{tool}'. Use one of {TOOL_NAMES}."}
+
+    # No-progress guard: small models tend to repeat a finished step. Reject
+    # repeats whose inputs have not changed, and say what is still open.
+    if tool == "extract_findings" and state.findings:
+        return {"ok": False, "feedback": f"Findings are already extracted and unchanged. Still open: {', '.join(open_items(state))}."}
+    if tool == "check_danger_signs" and state.rules is not None:
+        return {"ok": False, "feedback": f"Danger signs already checked (level {state.rules['level']}) and nothing changed. Still open: {', '.join(open_items(state))}."}
+    if tool == "get_patient_history" and state.history is not None:
+        return {"ok": False, "feedback": f"History already loaded. Still open: {', '.join(open_items(state))}."}
+    if tool == "refer_to_clinician" and state.referral:
+        return {"ok": False, "feedback": f"Referral already open. Still open: {', '.join(open_items(state))}."}
+    if tool == "recommend_care" and state.plan and state.rules and protocols.level_at_least(state.plan["triage"], state.rules["level"]):
+        return {"ok": False, "feedback": f"A valid plan already exists. Still open: {', '.join(open_items(state))}."}
 
     if tool == "ask_health_worker":
         if not (args.get("question") or "").strip():

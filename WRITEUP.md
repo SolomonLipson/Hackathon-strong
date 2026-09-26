@@ -50,14 +50,27 @@ The agent never has to guess. It **asks the worker** when a critical vital is mi
 
 - **Keeping rule state consistent across pauses and crashes.** A worker's answer changes vitals, so earlier rule results become stale. We rebuild state by replaying the trace in order and mark the rules fresh only if `check_danger_signs` ran after the last change to findings or vitals. The checker also refuses `finish` if a new vital pushed the protocol level above the existing plan.
 - **Stopping the model from arguing with safety.** Early runs showed the model occasionally proposing a lower triage. Rejections with explicit reasons ("protocol requires at least RED: SpO₂ 88% < 90%") let it self-correct within one step, and repeated rejections switch to the rules planner.
+- **Small models repeat themselves.** Gemma 4 E4B initially called `extract_findings` 12 times in a row. We did not fix this by prompt-tweaking alone. The checker now rejects a repeated tool whose inputs haven't changed and returns the remaining checklist, and the state view carries an explicit `progress` / `still_open` checklist. The model still chooses what to ask, the triage level, the advice, and when to escalate.
 - **Model download on venue Wi-Fi.** We switched to the QAT builds (6.2 GB instead of 9.6 GB for E4B), which also suits the on-device goal.
 
 ## Results (M5 MacBook, 16 GB, Wi-Fi off)
 
-<!-- fill in after live runs -->
+All runs below used real Gemma 4 E4B QAT through Ollama, with no network. Their unedited traces are in the live demo.
+
+| Case | Outcome | Steps | Wall time |
+|---|---|---|---|
+| 2-year-old with cough, "breathing fast" | Asked for breathing rate (55), RED, Telugu advice, referral | 7 | 48 s |
+| Pregnant, severe headache, blurred vision | Instant RED referral, asked for BP (166), RED | 7 | 53 s |
+| Hinglish note: "behosh jaisi hai, kuch pee nahi rahi" | Gemma mapped "behosh" to lethargic/unconscious, RED, Hindi advice | 5 | 32 s |
+| Adult with mild fever, normal vitals | GREEN, home care in Hindi, follow-up in 2 days | 5 | 41 s |
+| Same flow with the model killed | RECOVER step, rules-only planner, RED, visit completed | 5 | 1 s |
+| Server `kill -9` mid-visit | Resumed at step 3 on restart, YELLOW plus referral | 6 | – |
+
+A DECIDE step takes about 4 to 6 s on an M5 laptop, and extraction about 5 s. In early runs the model repeated finished steps. After we added the no-progress guard and the `still_open` checklist, every case finished on Gemma with at most one checker rejection.
 
 ## Limitations and next steps
 
 The danger-sign protocol is a hackathon demo and is not clinically validated. The next steps are clinician-reviewed IMCI/maternal rule sets, on-device voice input, packaging for Android with LiteRT, encryption at rest, and authenticated sync to the state HMIS.
 
-**Code:** https://github.com/SolomonLipson/Hackathon-strong
+**Code:** https://github.com/SolomonLipson/Hackathon-strong  
+**Live demo (replay of real on-device runs):** https://solomonlipson.github.io/Hackathon-strong/

@@ -1,0 +1,1871 @@
+{
+ "encounters": {
+  "1d36be78dec8": {
+   "id": "1d36be78dec8",
+   "patient_id": "702305e836be",
+   "note": "7 months pregnant. Severe headache since morning and says her vision is blurred. Feet swollen.",
+   "vitals": {
+    "sbp": 166.0
+   },
+   "language": "Telugu",
+   "status": "handoff",
+   "triage": "RED",
+   "findings": {
+    "symptoms": [
+     "headache",
+     "swollen feet",
+     "vision blurred"
+    ],
+    "danger_signs": [
+     "severe_headache_blurred_vision"
+    ],
+    "duration_days": null,
+    "summary": "The 7-month pregnant patient reports a severe headache since morning, blurred vision, and swollen feet.",
+    "source": "gemma4:e4b-it-qat"
+   },
+   "plan": {
+    "triage": "RED",
+    "advice_steps": [
+     "Do not give any medication without a doctor's instruction.",
+     "Keep the patient calm and comfortable.",
+     "Ensure someone takes her to the nearest hospital immediately."
+    ],
+    "advice_local_language": "వైద్యుని సూచన లేకుండా మందులు ఇవ్వవద్దు. రోగిని ప్రశాంతంగా ఉంచండి. వెంటనే సమీప ఆసుపత్రికి తీసుకెళ్లండి.",
+    "followup_days": 0,
+    "confidence": 1.0,
+    "rationale": "The patient meets multiple severe danger signs (Severe Headache, Blurred Vision, Hypertension in pregnancy) requiring immediate emergency referral."
+   },
+   "question": null,
+   "answers": [
+    {
+     "question": "What is the patient's Systolic Blood Pressure (SBP)?",
+     "field": "sbp",
+     "answer": "166"
+    }
+   ],
+   "degraded": 0,
+   "created_at": 1790401963.4236171,
+   "updated_at": 1790402015.719382,
+   "patient": {
+    "id": "702305e836be",
+    "name": "Lakshmi",
+    "age_years": 24.0,
+    "sex": "F",
+    "pregnant": 1,
+    "village": null,
+    "created_at": 1790401963.423261
+   },
+   "steps": [
+    {
+     "id": 1,
+     "encounter_id": "1d36be78dec8",
+     "n": 1,
+     "phase": "decide",
+     "tool": "extract_findings",
+     "detail": {
+      "thought": "I will start by extracting the findings from the provided note to structure the patient's current complaints.",
+      "args": {
+       "triage": "GREEN",
+       "advice_steps": [
+        "Rest in a quiet, dark room.",
+        "Drink plenty of water.",
+        "Monitor headache and vision every hour."
+       ],
+       "advice_local_language": "నిశ్శబ్దంగా, చీకటి గదిలో విశ్రాంతి తీసుకోండి. పుష్కరిన నీరు తాగండి. ప్రతి గంటకు తలనొప్పి మరియు దృష్టిని గమనించండి.",
+       "followup_days": 1,
+       "confidence": 0.9,
+       "rationale": "Patient is 7 months pregnant with severe headache, blurred vision, and swelling, which are concerning symptoms for pre-eclampsia, requiring immediate assessment."
+      }
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790401974.4102242
+    },
+    {
+     "id": 2,
+     "encounter_id": "1d36be78dec8",
+     "n": 1,
+     "phase": "act",
+     "tool": "extract_findings",
+     "detail": {
+      "findings": {
+       "symptoms": [
+        "headache",
+        "swollen feet",
+        "vision blurred"
+       ],
+       "danger_signs": [
+        "severe_headache_blurred_vision"
+       ],
+       "duration_days": null,
+       "summary": "The 7-month pregnant patient reports a severe headache since morning, blurred vision, and swollen feet.",
+       "source": "gemma4:e4b-it-qat"
+      },
+      "vitals_added_from_note": [],
+      "keyword_safety_net_added": [
+       "severe_headache_blurred_vision"
+      ],
+      "model": "gemma4:e4b-it-qat"
+     },
+     "model": null,
+     "ts": 1790401979.1977768
+    },
+    {
+     "id": 3,
+     "encounter_id": "1d36be78dec8",
+     "n": 2,
+     "phase": "decide",
+     "tool": "check_danger_signs",
+     "detail": {
+      "thought": "The first step is to check the danger signs based on the extracted findings.",
+      "args": {}
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790401982.922164
+    },
+    {
+     "id": 4,
+     "encounter_id": "1d36be78dec8",
+     "n": 2,
+     "phase": "act",
+     "tool": "check_danger_signs",
+     "detail": {
+      "level": "RED",
+      "flags": [
+       {
+        "code": "severe_headache_blurred_vision",
+        "level": "RED",
+        "reason": "Severe headache / blurred vision"
+       }
+      ]
+     },
+     "model": null,
+     "ts": 1790401982.922938
+    },
+    {
+     "id": 5,
+     "encounter_id": "1d36be78dec8",
+     "n": 2,
+     "phase": "check",
+     "tool": "refer_to_clinician",
+     "detail": {
+      "ok": true,
+      "forced": true,
+      "feedback": "RED danger sign detected: emergency referral opened immediately, before any further reasoning.",
+      "referral": {
+       "id": "562a9217ad58",
+       "urgency": "RED",
+       "reason": "RED danger sign detected: emergency referral opened immediately, before any further reasoning."
+      },
+      "queued_for_sync": true
+     },
+     "model": null,
+     "ts": 1790401982.924475
+    },
+    {
+     "id": 6,
+     "encounter_id": "1d36be78dec8",
+     "n": 3,
+     "phase": "decide",
+     "tool": "get_patient_history",
+     "detail": {
+      "thought": "The protocol mandates an immediate RED referral due to severe headache and blurred vision, so I will now check the patient's history and then recommend care based on the existing RED referral.",
+      "args": {}
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790401986.943339
+    },
+    {
+     "id": 7,
+     "encounter_id": "1d36be78dec8",
+     "n": 3,
+     "phase": "act",
+     "tool": "get_patient_history",
+     "detail": {
+      "previous_visits": []
+     },
+     "model": null,
+     "ts": 1790401986.944313
+    },
+    {
+     "id": 8,
+     "encounter_id": "1d36be78dec8",
+     "n": 4,
+     "phase": "decide",
+     "tool": "ask_health_worker",
+     "detail": {
+      "thought": "The protocol mandates a RED referral due to severe headache and blurred vision, so I must now gather vitals and finalize the referral plan.",
+      "args": {
+       "question": "What is the patient's Systolic Blood Pressure (SBP)?",
+       "field": "sbp"
+      }
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790401991.5991628
+    },
+    {
+     "id": 9,
+     "encounter_id": "1d36be78dec8",
+     "n": 4,
+     "phase": "act",
+     "tool": "ask_health_worker",
+     "detail": {
+      "asked": "What is the patient's Systolic Blood Pressure (SBP)?",
+      "field": "sbp",
+      "status": "waiting_for_worker"
+     },
+     "model": null,
+     "ts": 1790401991.59996
+    },
+    {
+     "id": 10,
+     "encounter_id": "1d36be78dec8",
+     "n": 4,
+     "phase": "sense",
+     "tool": "worker_answer",
+     "detail": {
+      "question": "What is the patient's Systolic Blood Pressure (SBP)?",
+      "answer": "166",
+      "field": "sbp"
+     },
+     "model": null,
+     "ts": 1790401991.683667
+    },
+    {
+     "id": 11,
+     "encounter_id": "1d36be78dec8",
+     "n": 5,
+     "phase": "decide",
+     "tool": "check_danger_signs",
+     "detail": {
+      "thought": "The protocol indicates that danger signs must be checked, and since the referral is already opened based on a preliminary check, I will now formally check the danger signs and then recommend care based on the existing high-risk findings.",
+      "args": {
+       "summary": "The 7-month pregnant patient reports a severe headache since morning, blurred vision, and swollen feet. SBP is 166.0."
+      }
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790401998.953033
+    },
+    {
+     "id": 12,
+     "encounter_id": "1d36be78dec8",
+     "n": 5,
+     "phase": "act",
+     "tool": "check_danger_signs",
+     "detail": {
+      "level": "RED",
+      "flags": [
+       {
+        "code": "severe_pre_eclampsia_bp",
+        "level": "RED",
+        "reason": "BP 166.0/? in pregnancy"
+       },
+       {
+        "code": "severe_headache_blurred_vision",
+        "level": "RED",
+        "reason": "Severe headache / blurred vision"
+       }
+      ]
+     },
+     "model": null,
+     "ts": 1790401998.95399
+    },
+    {
+     "id": 13,
+     "encounter_id": "1d36be78dec8",
+     "n": 6,
+     "phase": "decide",
+     "tool": "recommend_care",
+     "detail": {
+      "thought": "The protocol has already mandated a RED referral, so I will now finalize the care recommendation based on the existing referral status.",
+      "args": {
+       "triage": "RED",
+       "advice_steps": [
+        "Do not give any medication without a doctor's instruction.",
+        "Keep the patient calm and comfortable.",
+        "Ensure someone takes her to the nearest hospital immediately."
+       ],
+       "advice_local_language": "వైద్యుని సూచన లేకుండా మందులు ఇవ్వవద్దు. రోగిని ప్రశాంతంగా ఉంచండి. వెంటనే సమీప ఆసుపత్రికి తీసుకెళ్లండి.",
+       "followup_days": 0,
+       "confidence": 1.0,
+       "rationale": "The patient meets multiple severe danger signs (Severe Headache, Blurred Vision, Hypertension in pregnancy) requiring immediate emergency referral."
+      }
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790402009.7773619
+    },
+    {
+     "id": 14,
+     "encounter_id": "1d36be78dec8",
+     "n": 6,
+     "phase": "act",
+     "tool": "recommend_care",
+     "detail": {
+      "plan": {
+       "triage": "RED",
+       "advice_steps": [
+        "Do not give any medication without a doctor's instruction.",
+        "Keep the patient calm and comfortable.",
+        "Ensure someone takes her to the nearest hospital immediately."
+       ],
+       "advice_local_language": "వైద్యుని సూచన లేకుండా మందులు ఇవ్వవద్దు. రోగిని ప్రశాంతంగా ఉంచండి. వెంటనే సమీప ఆసుపత్రికి తీసుకెళ్లండి.",
+       "followup_days": 0,
+       "confidence": 1.0,
+       "rationale": "The patient meets multiple severe danger signs (Severe Headache, Blurred Vision, Hypertension in pregnancy) requiring immediate emergency referral."
+      }
+     },
+     "model": null,
+     "ts": 1790402009.778494
+    },
+    {
+     "id": 15,
+     "encounter_id": "1d36be78dec8",
+     "n": 7,
+     "phase": "decide",
+     "tool": "finish",
+     "detail": {
+      "thought": "The protocol has already determined the necessary action, and the only remaining step is to finish the visit.",
+      "args": {
+       "summary": "The patient is 7 months pregnant with severe headache, blurred vision, and swollen feet, and has a blood pressure of 166.0. Due to severe danger signs indicating possible pre-eclampsia, immediate referral to the hospital has been initiated."
+      }
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790402015.716822
+    },
+    {
+     "id": 16,
+     "encounter_id": "1d36be78dec8",
+     "n": 7,
+     "phase": "act",
+     "tool": "finish",
+     "detail": {
+      "summary": "The patient is 7 months pregnant with severe headache, blurred vision, and swollen feet, and has a blood pressure of 166.0. Due to severe danger signs indicating possible pre-eclampsia, immediate referral to the hospital has been initiated."
+     },
+     "model": null,
+     "ts": 1790402015.7188292
+    }
+   ],
+   "handoffs": [
+    {
+     "id": "562a9217ad58",
+     "encounter_id": "1d36be78dec8",
+     "urgency": "RED",
+     "reason": "RED danger sign detected: emergency referral opened immediately, before any further reasoning.",
+     "status": "open",
+     "created_at": 1790401982.923552
+    }
+   ],
+   "followups": []
+  },
+  "0e5015b99406": {
+   "id": "0e5015b99406",
+   "patient_id": "527bca433777",
+   "note": "Bachchi ko 2 din se tez bukhar hai, aaj subah se behosh jaisi hai, kuch pee nahi rahi.",
+   "vitals": {
+    "temp_c": 39.8
+   },
+   "language": "Hindi",
+   "status": "handoff",
+   "triage": "RED",
+   "findings": {
+    "symptoms": [
+     "fever"
+    ],
+    "danger_signs": [
+     "unconscious_or_lethargic"
+    ],
+    "duration_days": 2,
+    "summary": "The child has had a high fever for two days and is lethargic this morning.",
+    "source": "gemma4:e4b-it-qat"
+   },
+   "plan": {
+    "triage": "RED",
+    "advice_steps": [
+     "Take the child to the nearest hospital immediately.",
+     "Do not wait for the fever to come down before leaving."
+    ],
+    "advice_local_language": "बच्चे को तुरंत नजदीकी अस्पताल ले जाएं। बुखार कम होने का इंतज़ार न करें।",
+    "followup_days": 0,
+    "confidence": 1.0,
+    "rationale": "The patient has a RED danger sign (unconscious/lethargic) and high fever, requiring immediate emergency referral."
+   },
+   "question": null,
+   "answers": [],
+   "degraded": 0,
+   "created_at": 1790402022.614673,
+   "updated_at": 1790402054.131669,
+   "patient": {
+    "id": "527bca433777",
+    "name": "Riya",
+    "age_years": 4.0,
+    "sex": "F",
+    "pregnant": 0,
+    "village": null,
+    "created_at": 1790402022.614263
+   },
+   "steps": [
+    {
+     "id": 17,
+     "encounter_id": "0e5015b99406",
+     "n": 1,
+     "phase": "decide",
+     "tool": "extract_findings",
+     "detail": {
+      "thought": "I need to extract the findings from the note first to understand the patient's condition.",
+      "args": {}
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790402026.381611
+    },
+    {
+     "id": 18,
+     "encounter_id": "0e5015b99406",
+     "n": 1,
+     "phase": "act",
+     "tool": "extract_findings",
+     "detail": {
+      "findings": {
+       "symptoms": [
+        "fever"
+       ],
+       "danger_signs": [
+        "unconscious_or_lethargic"
+       ],
+       "duration_days": 2,
+       "summary": "The child has had a high fever for two days and is lethargic this morning.",
+       "source": "gemma4:e4b-it-qat"
+      },
+      "vitals_added_from_note": [],
+      "keyword_safety_net_added": [],
+      "model": "gemma4:e4b-it-qat"
+     },
+     "model": null,
+     "ts": 1790402031.3019361
+    },
+    {
+     "id": 19,
+     "encounter_id": "0e5015b99406",
+     "n": 2,
+     "phase": "decide",
+     "tool": "check_danger_signs",
+     "detail": {
+      "thought": "I must first check the danger signs based on the extracted findings before proceeding with history or care recommendations.",
+      "args": {}
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790402035.114419
+    },
+    {
+     "id": 20,
+     "encounter_id": "0e5015b99406",
+     "n": 2,
+     "phase": "act",
+     "tool": "check_danger_signs",
+     "detail": {
+      "level": "RED",
+      "flags": [
+       {
+        "code": "high_fever",
+        "level": "YELLOW",
+        "reason": "Temperature 39.8°C ≥ 39.5°C"
+       },
+       {
+        "code": "unconscious_or_lethargic",
+        "level": "RED",
+        "reason": "Unconscious or unusually sleepy"
+       }
+      ]
+     },
+     "model": null,
+     "ts": 1790402035.115137
+    },
+    {
+     "id": 21,
+     "encounter_id": "0e5015b99406",
+     "n": 2,
+     "phase": "check",
+     "tool": "refer_to_clinician",
+     "detail": {
+      "ok": true,
+      "forced": true,
+      "feedback": "RED danger sign detected: emergency referral opened immediately, before any further reasoning.",
+      "referral": {
+       "id": "ce26d26eb177",
+       "urgency": "RED",
+       "reason": "RED danger sign detected: emergency referral opened immediately, before any further reasoning."
+      },
+      "queued_for_sync": true
+     },
+     "model": null,
+     "ts": 1790402035.116281
+    },
+    {
+     "id": 22,
+     "encounter_id": "0e5015b99406",
+     "n": 3,
+     "phase": "decide",
+     "tool": "get_patient_history",
+     "detail": {
+      "thought": "The protocol already mandated an immediate RED referral, so I will now load the history and then provide the final care recommendation based on the existing referral status.",
+      "args": {}
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790402038.980674
+    },
+    {
+     "id": 23,
+     "encounter_id": "0e5015b99406",
+     "n": 3,
+     "phase": "act",
+     "tool": "get_patient_history",
+     "detail": {
+      "previous_visits": []
+     },
+     "model": null,
+     "ts": 1790402038.981733
+    },
+    {
+     "id": 24,
+     "encounter_id": "0e5015b99406",
+     "n": 4,
+     "phase": "decide",
+     "tool": "recommend_care",
+     "detail": {
+      "thought": "The protocol has already mandated a RED referral, so I will now finalize the care recommendation based on the existing referral status.",
+      "args": {
+       "triage": "RED",
+       "advice_steps": [
+        "Take the child to the nearest hospital immediately.",
+        "Do not wait for the fever to come down before leaving."
+       ],
+       "advice_local_language": "बच्चे को तुरंत नजदीकी अस्पताल ले जाएं। बुखार कम होने का इंतज़ार न करें।",
+       "followup_days": 0,
+       "confidence": 1.0,
+       "rationale": "The patient has a RED danger sign (unconscious/lethargic) and high fever, requiring immediate emergency referral."
+      }
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790402048.20301
+    },
+    {
+     "id": 25,
+     "encounter_id": "0e5015b99406",
+     "n": 4,
+     "phase": "act",
+     "tool": "recommend_care",
+     "detail": {
+      "plan": {
+       "triage": "RED",
+       "advice_steps": [
+        "Take the child to the nearest hospital immediately.",
+        "Do not wait for the fever to come down before leaving."
+       ],
+       "advice_local_language": "बच्चे को तुरंत नजदीकी अस्पताल ले जाएं। बुखार कम होने का इंतज़ार न करें।",
+       "followup_days": 0,
+       "confidence": 1.0,
+       "rationale": "The patient has a RED danger sign (unconscious/lethargic) and high fever, requiring immediate emergency referral."
+      }
+     },
+     "model": null,
+     "ts": 1790402048.204122
+    },
+    {
+     "id": 26,
+     "encounter_id": "0e5015b99406",
+     "n": 5,
+     "phase": "decide",
+     "tool": "finish",
+     "detail": {
+      "thought": "The protocol has already determined the necessary action, which is to finish the visit by summarizing the plan.",
+      "args": {
+       "summary": "The child has a high fever (39.8°C) and is lethargic, which is a RED danger sign. Immediate referral to the hospital is required. The advice given is to take the child to the nearest hospital immediately."
+      }
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790402054.129436
+    },
+    {
+     "id": 27,
+     "encounter_id": "0e5015b99406",
+     "n": 5,
+     "phase": "act",
+     "tool": "finish",
+     "detail": {
+      "summary": "The child has a high fever (39.8°C) and is lethargic, which is a RED danger sign. Immediate referral to the hospital is required. The advice given is to take the child to the nearest hospital immediately."
+     },
+     "model": null,
+     "ts": 1790402054.130443
+    }
+   ],
+   "handoffs": [
+    {
+     "id": "ce26d26eb177",
+     "encounter_id": "0e5015b99406",
+     "urgency": "RED",
+     "reason": "RED danger sign detected: emergency referral opened immediately, before any further reasoning.",
+     "status": "open",
+     "created_at": 1790402035.11569
+    }
+   ],
+   "followups": []
+  },
+  "c64fc2ab225f": {
+   "id": "c64fc2ab225f",
+   "patient_id": "20cb248c2873",
+   "note": "Mild fever and body ache since yesterday, eating and drinking normally, no other complaints.",
+   "vitals": {
+    "temp_c": 38.1,
+    "hr": 92.0,
+    "rr": 18.0,
+    "spo2": 98.0
+   },
+   "language": "Hindi",
+   "status": "done",
+   "triage": "GREEN",
+   "findings": {
+    "symptoms": [
+     "body ache",
+     "fever"
+    ],
+    "danger_signs": [],
+    "duration_days": 1,
+    "summary": "The patient reports mild fever and body ache since yesterday.",
+    "source": "gemma4:e4b-it-qat"
+   },
+   "plan": {
+    "triage": "GREEN",
+    "advice_steps": [
+     "Take paracetamol as advised by a doctor for fever.",
+     "Drink plenty of fluids like ORS or water.",
+     "Rest well and monitor temperature twice a day."
+    ],
+    "advice_local_language": "डॉक्टर की सलाह पर बुखार के लिए पैरासिटामोल लें। खूब पानी या ओआरएस पिएं। आराम करें और दिन में दो बार तापमान जांचें।",
+    "followup_days": 2,
+    "confidence": 0.9,
+    "rationale": "Symptoms are mild (fever 38.1C, body ache) and the patient is otherwise well, fitting the GREEN protocol."
+   },
+   "question": null,
+   "answers": [],
+   "degraded": 0,
+   "created_at": 1790402054.938401,
+   "updated_at": 1790402094.807125,
+   "patient": {
+    "id": "20cb248c2873",
+    "name": "Ramesh",
+    "age_years": 32.0,
+    "sex": "M",
+    "pregnant": 0,
+    "village": null,
+    "created_at": 1790402054.938226
+   },
+   "steps": [
+    {
+     "id": 28,
+     "encounter_id": "c64fc2ab225f",
+     "n": 1,
+     "phase": "decide",
+     "tool": "extract_findings",
+     "detail": {
+      "thought": "First, I will extract the findings from the provided note to structure the patient's current status.",
+      "args": {
+       "triage": "GREEN",
+       "advice_steps": [
+        "Monitor temperature and hydration closely.",
+        "Rest and take over-the-counter paracetamol as advised by a local pharmacist for fever."
+       ],
+       "advice_local_language": "तापमान और पानी का ध्यान रखें। आराम करें और बुखार के लिए स्थानीय दवा लें।",
+       "followup_days": 2,
+       "confidence": 0.9,
+       "rationale": "Patient has mild fever and body ache with stable vitals and normal intake, suggesting a self-limiting viral illness."
+      }
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790402064.806487
+    },
+    {
+     "id": 29,
+     "encounter_id": "c64fc2ab225f",
+     "n": 1,
+     "phase": "act",
+     "tool": "extract_findings",
+     "detail": {
+      "findings": {
+       "symptoms": [
+        "body ache",
+        "fever"
+       ],
+       "danger_signs": [],
+       "duration_days": 1,
+       "summary": "The patient reports mild fever and body ache since yesterday.",
+       "source": "gemma4:e4b-it-qat"
+      },
+      "vitals_added_from_note": [],
+      "keyword_safety_net_added": [],
+      "model": "gemma4:e4b-it-qat"
+     },
+     "model": null,
+     "ts": 1790402069.581681
+    },
+    {
+     "id": 30,
+     "encounter_id": "c64fc2ab225f",
+     "n": 2,
+     "phase": "decide",
+     "tool": "check_danger_signs",
+     "detail": {
+      "thought": "I will first check the patient's vital signs against the danger sign protocol, then check their history, and finally recommend care.",
+      "args": {
+       "summary": "Mild fever and body ache since yesterday, eating and drinking normally, no other complaints."
+      }
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790402075.319633
+    },
+    {
+     "id": 31,
+     "encounter_id": "c64fc2ab225f",
+     "n": 2,
+     "phase": "act",
+     "tool": "check_danger_signs",
+     "detail": {
+      "level": "GREEN",
+      "flags": []
+     },
+     "model": null,
+     "ts": 1790402075.320501
+    },
+    {
+     "id": 32,
+     "encounter_id": "c64fc2ab225f",
+     "n": 3,
+     "phase": "decide",
+     "tool": "get_patient_history",
+     "detail": {
+      "thought": "I need to load the patient's history first, as it is still open, before I can recommend care.",
+      "args": {}
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790402078.259787
+    },
+    {
+     "id": 33,
+     "encounter_id": "c64fc2ab225f",
+     "n": 3,
+     "phase": "act",
+     "tool": "get_patient_history",
+     "detail": {
+      "previous_visits": []
+     },
+     "model": null,
+     "ts": 1790402078.261162
+    },
+    {
+     "id": 34,
+     "encounter_id": "c64fc2ab225f",
+     "n": 4,
+     "phase": "decide",
+     "tool": "recommend_care",
+     "detail": {
+      "thought": "The patient has mild fever and body ache, and the initial protocol suggests GREEN care, so I will recommend home care steps.",
+      "args": {
+       "triage": "GREEN",
+       "advice_steps": [
+        "Take paracetamol as advised by a doctor for fever.",
+        "Drink plenty of fluids like ORS or water.",
+        "Rest well and monitor temperature twice a day."
+       ],
+       "advice_local_language": "डॉक्टर की सलाह पर बुखार के लिए पैरासिटामोल लें। खूब पानी या ओआरएस पिएं। आराम करें और दिन में दो बार तापमान जांचें।",
+       "followup_days": 2,
+       "confidence": 0.9,
+       "rationale": "Symptoms are mild (fever 38.1C, body ache) and the patient is otherwise well, fitting the GREEN protocol."
+      }
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790402089.044422
+    },
+    {
+     "id": 35,
+     "encounter_id": "c64fc2ab225f",
+     "n": 4,
+     "phase": "act",
+     "tool": "recommend_care",
+     "detail": {
+      "plan": {
+       "triage": "GREEN",
+       "advice_steps": [
+        "Take paracetamol as advised by a doctor for fever.",
+        "Drink plenty of fluids like ORS or water.",
+        "Rest well and monitor temperature twice a day."
+       ],
+       "advice_local_language": "डॉक्टर की सलाह पर बुखार के लिए पैरासिटामोल लें। खूब पानी या ओआरएस पिएं। आराम करें और दिन में दो बार तापमान जांचें।",
+       "followup_days": 2,
+       "confidence": 0.9,
+       "rationale": "Symptoms are mild (fever 38.1C, body ache) and the patient is otherwise well, fitting the GREEN protocol."
+      }
+     },
+     "model": null,
+     "ts": 1790402089.046158
+    },
+    {
+     "id": 36,
+     "encounter_id": "c64fc2ab225f",
+     "n": 5,
+     "phase": "decide",
+     "tool": "finish",
+     "detail": {
+      "thought": "The protocol has been drafted and all necessary checks are complete, so I will now finish the visit.",
+      "args": {
+       "summary": "Patient is 32-year-old male with mild fever (38.1C) and body ache for 1 day. Triage is GREEN. Advice given for home care, follow up in 2 days."
+      }
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790402094.803766
+    },
+    {
+     "id": 37,
+     "encounter_id": "c64fc2ab225f",
+     "n": 5,
+     "phase": "act",
+     "tool": "finish",
+     "detail": {
+      "summary": "Patient is 32-year-old male with mild fever (38.1C) and body ache for 1 day. Triage is GREEN. Advice given for home care, follow up in 2 days."
+     },
+     "model": null,
+     "ts": 1790402094.806338
+    }
+   ],
+   "handoffs": [],
+   "followups": [
+    {
+     "id": "3db3adb3d33d",
+     "patient_id": "20cb248c2873",
+     "encounter_id": "c64fc2ab225f",
+     "due_ts": 1790574894.806644,
+     "reason": "Follow-up after GREEN triage"
+    }
+   ]
+  },
+  "aed58642af41": {
+   "id": "aed58642af41",
+   "patient_id": "bfaaedbe53a1",
+   "note": "Cough for 10 days, feels breathless when walking, mild chest pain.",
+   "vitals": {
+    "temp_c": 37.9,
+    "hr": 104.0,
+    "spo2": 93.0
+   },
+   "language": "Hindi",
+   "status": "handoff",
+   "triage": "RED",
+   "findings": {
+    "symptoms": [
+     "cough",
+     "pain"
+    ],
+    "danger_signs": [
+     "chest_pain",
+     "difficulty_breathing"
+    ],
+    "duration_days": 10,
+    "summary": "Cough for 10 days, feels breathless when walking, mild chest pain. ",
+    "source": "keyword-fallback"
+   },
+   "plan": {
+    "triage": "RED",
+    "advice_steps": [
+     "Arrange transport to the nearest PHC / hospital now (call 108).",
+     "Keep the patient warm and lying on their side if drowsy.",
+     "Do not give anything by mouth if unconscious or convulsing."
+    ],
+    "advice_local_language": "",
+    "followup_days": 1,
+    "confidence": 0.6,
+    "rationale": "Rules-only triage (local model unavailable)."
+   },
+   "question": null,
+   "answers": [],
+   "degraded": 1,
+   "created_at": 1790402105.19069,
+   "updated_at": 1790402105.194591,
+   "patient": {
+    "id": "bfaaedbe53a1",
+    "name": "Sunita",
+    "age_years": 58.0,
+    "sex": "F",
+    "pregnant": 0,
+    "village": null,
+    "created_at": 1790402105.190309
+   },
+   "steps": [
+    {
+     "id": 38,
+     "encounter_id": "aed58642af41",
+     "n": 1,
+     "phase": "recover",
+     "tool": null,
+     "detail": {
+      "message": "Local model unavailable: switched to deterministic rules planner.",
+      "error": "local model disabled (simulated crash)"
+     },
+     "model": null,
+     "ts": 1790402105.19172
+    },
+    {
+     "id": 39,
+     "encounter_id": "aed58642af41",
+     "n": 1,
+     "phase": "decide",
+     "tool": "extract_findings",
+     "detail": {
+      "thought": "Extract findings (degraded mode).",
+      "args": {}
+     },
+     "model": "rules",
+     "ts": 1790402105.191942
+    },
+    {
+     "id": 40,
+     "encounter_id": "aed58642af41",
+     "n": 1,
+     "phase": "act",
+     "tool": "extract_findings",
+     "detail": {
+      "findings": {
+       "symptoms": [
+        "cough",
+        "pain"
+       ],
+       "danger_signs": [
+        "chest_pain",
+        "difficulty_breathing"
+       ],
+       "duration_days": 10,
+       "summary": "Cough for 10 days, feels breathless when walking, mild chest pain. ",
+       "source": "keyword-fallback"
+      },
+      "vitals_added_from_note": [],
+      "keyword_safety_net_added": [],
+      "model": null
+     },
+     "model": null,
+     "ts": 1790402105.192234
+    },
+    {
+     "id": 41,
+     "encounter_id": "aed58642af41",
+     "n": 2,
+     "phase": "decide",
+     "tool": "check_danger_signs",
+     "detail": {
+      "thought": "Check protocol rules.",
+      "args": {}
+     },
+     "model": "rules",
+     "ts": 1790402105.192391
+    },
+    {
+     "id": 42,
+     "encounter_id": "aed58642af41",
+     "n": 2,
+     "phase": "act",
+     "tool": "check_danger_signs",
+     "detail": {
+      "level": "RED",
+      "flags": [
+       {
+        "code": "low_spo2",
+        "level": "YELLOW",
+        "reason": "SpO2 93.0% < 94%"
+       },
+       {
+        "code": "chest_pain",
+        "level": "RED",
+        "reason": "Chest pain"
+       },
+       {
+        "code": "difficulty_breathing",
+        "level": "YELLOW",
+        "reason": "Difficulty breathing"
+       }
+      ]
+     },
+     "model": null,
+     "ts": 1790402105.192605
+    },
+    {
+     "id": 43,
+     "encounter_id": "aed58642af41",
+     "n": 2,
+     "phase": "check",
+     "tool": "refer_to_clinician",
+     "detail": {
+      "ok": true,
+      "forced": true,
+      "feedback": "RED danger sign detected: emergency referral opened immediately, before any further reasoning.",
+      "referral": {
+       "id": "b1d6faa09a88",
+       "urgency": "RED",
+       "reason": "RED danger sign detected: emergency referral opened immediately, before any further reasoning."
+      },
+      "queued_for_sync": true
+     },
+     "model": null,
+     "ts": 1790402105.1933599
+    },
+    {
+     "id": 44,
+     "encounter_id": "aed58642af41",
+     "n": 3,
+     "phase": "decide",
+     "tool": "get_patient_history",
+     "detail": {
+      "thought": "Load history.",
+      "args": {}
+     },
+     "model": "rules",
+     "ts": 1790402105.1934972
+    },
+    {
+     "id": 45,
+     "encounter_id": "aed58642af41",
+     "n": 3,
+     "phase": "act",
+     "tool": "get_patient_history",
+     "detail": {
+      "previous_visits": []
+     },
+     "model": null,
+     "ts": 1790402105.1936939
+    },
+    {
+     "id": 46,
+     "encounter_id": "aed58642af41",
+     "n": 4,
+     "phase": "decide",
+     "tool": "recommend_care",
+     "detail": {
+      "thought": "Recommend care from protocol level.",
+      "args": {
+       "triage": "RED",
+       "advice_steps": [
+        "Arrange transport to the nearest PHC / hospital now (call 108).",
+        "Keep the patient warm and lying on their side if drowsy.",
+        "Do not give anything by mouth if unconscious or convulsing."
+       ],
+       "confidence": 0.6,
+       "followup_days": 1,
+       "rationale": "Rules-only triage (local model unavailable)."
+      }
+     },
+     "model": "rules",
+     "ts": 1790402105.193824
+    },
+    {
+     "id": 47,
+     "encounter_id": "aed58642af41",
+     "n": 4,
+     "phase": "act",
+     "tool": "recommend_care",
+     "detail": {
+      "plan": {
+       "triage": "RED",
+       "advice_steps": [
+        "Arrange transport to the nearest PHC / hospital now (call 108).",
+        "Keep the patient warm and lying on their side if drowsy.",
+        "Do not give anything by mouth if unconscious or convulsing."
+       ],
+       "advice_local_language": "",
+       "followup_days": 1,
+       "confidence": 0.6,
+       "rationale": "Rules-only triage (local model unavailable)."
+      }
+     },
+     "model": null,
+     "ts": 1790402105.1939352
+    },
+    {
+     "id": 48,
+     "encounter_id": "aed58642af41",
+     "n": 5,
+     "phase": "decide",
+     "tool": "finish",
+     "detail": {
+      "thought": "Finish.",
+      "args": {
+       "summary": "Completed in degraded (rules-only) mode."
+      }
+     },
+     "model": "rules",
+     "ts": 1790402105.194289
+    },
+    {
+     "id": 49,
+     "encounter_id": "aed58642af41",
+     "n": 5,
+     "phase": "act",
+     "tool": "finish",
+     "detail": {
+      "summary": "Completed in degraded (rules-only) mode."
+     },
+     "model": null,
+     "ts": 1790402105.1944058
+    }
+   ],
+   "handoffs": [
+    {
+     "id": "b1d6faa09a88",
+     "encounter_id": "aed58642af41",
+     "urgency": "RED",
+     "reason": "RED danger sign detected: emergency referral opened immediately, before any further reasoning.",
+     "status": "open",
+     "created_at": 1790402105.193198
+    }
+   ],
+   "followups": [
+    {
+     "id": "a71e38c9d7ac",
+     "patient_id": "bfaaedbe53a1",
+     "encounter_id": "aed58642af41",
+     "due_ts": 1790488505.194466,
+     "reason": "Follow-up after RED triage"
+    }
+   ]
+  },
+  "718aaf184c2e": {
+   "id": "718aaf184c2e",
+   "patient_id": "77f1bd8b4bea",
+   "note": "Loose motions 5 times since yesterday, vomiting twice, still drinking but very thirsty, eyes look sunken.",
+   "vitals": {
+    "temp_c": 37.8,
+    "hr": 118.0
+   },
+   "language": "Telugu",
+   "status": "handoff",
+   "triage": "YELLOW",
+   "findings": {
+    "symptoms": [
+     "diarrhoea",
+     "thirsty",
+     "vomiting"
+    ],
+    "danger_signs": [
+     "severe_dehydration"
+    ],
+    "duration_days": 1,
+    "summary": "The 6-year-old female patient has had loose motions 5 times since yesterday and has vomited twice.",
+    "source": "gemma4:e4b-it-qat"
+   },
+   "plan": {
+    "triage": "YELLOW",
+    "advice_steps": [
+     "Give ORS (Oral Rehydration Solution) frequently in small sips.",
+     "Monitor urine output closely.",
+     "Continue to encourage drinking fluids even if vomiting occurs."
+    ],
+    "advice_local_language": "ORS (ఓరల్ రీహైడ్రేషన్ సొల్యూషన్) ను తరచుగా కొద్దికొద్దిగా ఇవ్వండి. మూత్ర విసర్జనను గమనించండి. వాంతులు అయినప్పటికీ ద్రవాలు తాగడానికి ప్రోత్సహించండి.",
+    "followup_days": 1,
+    "confidence": 0.9,
+    "rationale": "The patient presents with signs of dehydration (sunken eyes, high HR) and the protocol mandates a YELLOW triage, requiring clinical assessment."
+   },
+   "question": null,
+   "answers": [],
+   "degraded": 0,
+   "created_at": 1790402119.405849,
+   "updated_at": 1790402159.9756281,
+   "patient": {
+    "id": "77f1bd8b4bea",
+    "name": "Meena",
+    "age_years": 6.0,
+    "sex": "F",
+    "pregnant": 0,
+    "village": null,
+    "created_at": 1790402119.4055622
+   },
+   "steps": [
+    {
+     "id": 50,
+     "encounter_id": "718aaf184c2e",
+     "n": 1,
+     "phase": "decide",
+     "tool": "extract_findings",
+     "detail": {
+      "thought": "I will start by extracting the findings from the provided note to structure the patient's current status.",
+      "args": {}
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790402123.4512131
+    },
+    {
+     "id": 51,
+     "encounter_id": "718aaf184c2e",
+     "n": 1,
+     "phase": "act",
+     "tool": "extract_findings",
+     "detail": {
+      "findings": {
+       "symptoms": [
+        "diarrhoea",
+        "thirsty",
+        "vomiting"
+       ],
+       "danger_signs": [
+        "severe_dehydration"
+       ],
+       "duration_days": 1,
+       "summary": "The 6-year-old female patient has had loose motions 5 times since yesterday and has vomited twice.",
+       "source": "gemma4:e4b-it-qat"
+      },
+      "vitals_added_from_note": [],
+      "keyword_safety_net_added": [
+       "severe_dehydration"
+      ],
+      "model": "gemma4:e4b-it-qat"
+     },
+     "model": null,
+     "ts": 1790402128.6060271
+    },
+    {
+     "id": 52,
+     "encounter_id": "718aaf184c2e",
+     "n": 2,
+     "phase": "decide",
+     "tool": "check_danger_signs",
+     "detail": {
+      "thought": "I need to check the danger signs based on the extracted findings before proceeding with history or care recommendations.",
+      "args": {}
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790402132.4247239
+    },
+    {
+     "id": 53,
+     "encounter_id": "718aaf184c2e",
+     "n": 2,
+     "phase": "act",
+     "tool": "check_danger_signs",
+     "detail": {
+      "level": "YELLOW",
+      "flags": [
+       {
+        "code": "severe_dehydration",
+        "level": "YELLOW",
+        "reason": "Signs of dehydration"
+       }
+      ]
+     },
+     "model": null,
+     "ts": 1790402132.425801
+    },
+    {
+     "id": 54,
+     "encounter_id": "718aaf184c2e",
+     "n": 0,
+     "phase": "recover",
+     "tool": null,
+     "detail": {
+      "message": "Process restarted: resuming this visit from its last saved step."
+     },
+     "model": null,
+     "ts": 1790402134.709779
+    },
+    {
+     "id": 55,
+     "encounter_id": "718aaf184c2e",
+     "n": 3,
+     "phase": "decide",
+     "tool": "get_patient_history",
+     "detail": {
+      "thought": "I need to load the patient's history before recommending care, as it is still open.",
+      "args": {}
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790402136.993508
+    },
+    {
+     "id": 56,
+     "encounter_id": "718aaf184c2e",
+     "n": 3,
+     "phase": "act",
+     "tool": "get_patient_history",
+     "detail": {
+      "previous_visits": []
+     },
+     "model": null,
+     "ts": 1790402136.995177
+    },
+    {
+     "id": 57,
+     "encounter_id": "718aaf184c2e",
+     "n": 4,
+     "phase": "decide",
+     "tool": "recommend_care",
+     "detail": {
+      "thought": "The patient has signs of severe dehydration (sunken eyes, high HR) and the protocol suggests YELLOW, so I must recommend care and refer to a clinician.",
+      "args": {
+       "triage": "YELLOW",
+       "advice_steps": [
+        "Give ORS (Oral Rehydration Solution) frequently in small sips.",
+        "Monitor urine output closely.",
+        "Continue to encourage drinking fluids even if vomiting occurs."
+       ],
+       "advice_local_language": "ORS (ఓరల్ రీహైడ్రేషన్ సొల్యూషన్) ను తరచుగా కొద్దికొద్దిగా ఇవ్వండి. మూత్ర విసర్జనను గమనించండి. వాంతులు అయినప్పటికీ ద్రవాలు తాగడానికి ప్రోత్సహించండి.",
+       "followup_days": 1,
+       "confidence": 0.9,
+       "rationale": "The patient presents with signs of dehydration (sunken eyes, high HR) and the protocol mandates a YELLOW triage, requiring clinical assessment."
+      }
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790402148.988582
+    },
+    {
+     "id": 58,
+     "encounter_id": "718aaf184c2e",
+     "n": 4,
+     "phase": "act",
+     "tool": "recommend_care",
+     "detail": {
+      "plan": {
+       "triage": "YELLOW",
+       "advice_steps": [
+        "Give ORS (Oral Rehydration Solution) frequently in small sips.",
+        "Monitor urine output closely.",
+        "Continue to encourage drinking fluids even if vomiting occurs."
+       ],
+       "advice_local_language": "ORS (ఓరల్ రీహైడ్రేషన్ సొల్యూషన్) ను తరచుగా కొద్దికొద్దిగా ఇవ్వండి. మూత్ర విసర్జనను గమనించండి. వాంతులు అయినప్పటికీ ద్రవాలు తాగడానికి ప్రోత్సహించండి.",
+       "followup_days": 1,
+       "confidence": 0.9,
+       "rationale": "The patient presents with signs of dehydration (sunken eyes, high HR) and the protocol mandates a YELLOW triage, requiring clinical assessment."
+      }
+     },
+     "model": null,
+     "ts": 1790402148.990207
+    },
+    {
+     "id": 59,
+     "encounter_id": "718aaf184c2e",
+     "n": 5,
+     "phase": "decide",
+     "tool": "refer_to_clinician",
+     "detail": {
+      "thought": "The protocol has already drafted a YELLOW plan, and the only remaining step is to open the referral to the clinician as per the 'still_open' list.",
+      "args": {
+       "urgency": "YELLOW",
+       "reason": "Signs of dehydration (sunken eyes, high HR) and persistent symptoms despite initial advice."
+      }
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790402154.435321
+    },
+    {
+     "id": 60,
+     "encounter_id": "718aaf184c2e",
+     "n": 5,
+     "phase": "act",
+     "tool": "refer_to_clinician",
+     "detail": {
+      "referral": {
+       "id": "3660e91fbdd8",
+       "urgency": "YELLOW",
+       "reason": "Signs of dehydration (sunken eyes, high HR) and persistent symptoms despite initial advice."
+      },
+      "queued_for_sync": true
+     },
+     "model": null,
+     "ts": 1790402154.4378629
+    },
+    {
+     "id": 61,
+     "encounter_id": "718aaf184c2e",
+     "n": 6,
+     "phase": "decide",
+     "tool": "finish",
+     "detail": {
+      "thought": "The plan has been drafted and the referral opened, so the final step is to finish the visit.",
+      "args": {
+       "summary": "The 6-year-old female patient has been triaged as YELLOW due to signs of dehydration (sunken eyes, high HR) and has been advised to give ORS frequently and monitor urine output. A referral has been initiated for clinical assessment."
+      }
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790402159.972337
+    },
+    {
+     "id": 62,
+     "encounter_id": "718aaf184c2e",
+     "n": 6,
+     "phase": "act",
+     "tool": "finish",
+     "detail": {
+      "summary": "The 6-year-old female patient has been triaged as YELLOW due to signs of dehydration (sunken eyes, high HR) and has been advised to give ORS frequently and monitor urine output. A referral has been initiated for clinical assessment."
+     },
+     "model": null,
+     "ts": 1790402159.973862
+    }
+   ],
+   "handoffs": [
+    {
+     "id": "3660e91fbdd8",
+     "encounter_id": "718aaf184c2e",
+     "urgency": "YELLOW",
+     "reason": "Signs of dehydration (sunken eyes, high HR) and persistent symptoms despite initial advice.",
+     "status": "open",
+     "created_at": 1790402154.4367979
+    }
+   ],
+   "followups": [
+    {
+     "id": "2d7dac6dc6d6",
+     "patient_id": "77f1bd8b4bea",
+     "encounter_id": "718aaf184c2e",
+     "due_ts": 1790488559.9743428,
+     "reason": "Follow-up after YELLOW triage"
+    }
+   ]
+  },
+  "6a8b4fb4df63": {
+   "id": "6a8b4fb4df63",
+   "patient_id": "f206fd346878",
+   "note": "2 year old boy, cough and fever for 3 days, mother says he is breathing fast and not eating well.",
+   "vitals": {
+    "temp_c": 38.6,
+    "rr": 55.0
+   },
+   "language": "Telugu",
+   "status": "handoff",
+   "triage": "RED",
+   "findings": {
+    "symptoms": [
+     "cough",
+     "fever"
+    ],
+    "danger_signs": [
+     "difficulty_breathing"
+    ],
+    "duration_days": 3,
+    "summary": "A 2-year-old boy has had a cough and fever for three days, and his mother reports fast breathing and poor appetite.",
+    "source": "gemma4:e4b-it-qat"
+   },
+   "plan": {
+    "triage": "RED",
+    "advice_steps": [
+     "Take the child to the nearest hospital immediately.",
+     "Do not wait for the fever to come down before leaving."
+    ],
+    "advice_local_language": "తక్షణమే దగ్గరలోని ఆసుపత్రికి తీసుకెళ్లండి. జ్వరం తగ్గడం కోసం వేచి ఉండకండి.",
+    "followup_days": 0,
+    "confidence": 1.0,
+    "rationale": "The patient meets the criteria for a RED triage due to fast breathing and reported difficulty breathing."
+   },
+   "question": null,
+   "answers": [
+    {
+     "question": "Child's breathing rate (how many breaths in one minute)?",
+     "field": "rr",
+     "answer": "55"
+    }
+   ],
+   "degraded": 0,
+   "created_at": 1790402216.597654,
+   "updated_at": 1790402263.57182,
+   "patient": {
+    "id": "f206fd346878",
+    "name": "Aarav",
+    "age_years": 2.0,
+    "sex": "M",
+    "pregnant": 0,
+    "village": null,
+    "created_at": 1790402216.596371
+   },
+   "steps": [
+    {
+     "id": 63,
+     "encounter_id": "6a8b4fb4df63",
+     "n": 1,
+     "phase": "decide",
+     "tool": "extract_findings",
+     "detail": {
+      "thought": "First, I need to extract the findings from the provided note to understand the patient's current status.",
+      "args": {}
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790402220.810409
+    },
+    {
+     "id": 64,
+     "encounter_id": "6a8b4fb4df63",
+     "n": 1,
+     "phase": "act",
+     "tool": "extract_findings",
+     "detail": {
+      "findings": {
+       "symptoms": [
+        "cough",
+        "fever"
+       ],
+       "danger_signs": [
+        "difficulty_breathing"
+       ],
+       "duration_days": 3,
+       "summary": "A 2-year-old boy has had a cough and fever for three days, and his mother reports fast breathing and poor appetite.",
+       "source": "gemma4:e4b-it-qat"
+      },
+      "vitals_added_from_note": [],
+      "keyword_safety_net_added": [],
+      "model": "gemma4:e4b-it-qat"
+     },
+     "model": null,
+     "ts": 1790402226.9300501
+    },
+    {
+     "id": 65,
+     "encounter_id": "6a8b4fb4df63",
+     "n": 2,
+     "phase": "decide",
+     "tool": "check_danger_signs",
+     "detail": {
+      "thought": "I need to check for danger signs based on the extracted findings before proceeding with history or care recommendations.",
+      "args": {}
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790402230.731981
+    },
+    {
+     "id": 66,
+     "encounter_id": "6a8b4fb4df63",
+     "n": 2,
+     "phase": "act",
+     "tool": "check_danger_signs",
+     "detail": {
+      "level": "RED",
+      "flags": [
+       {
+        "code": "difficulty_breathing",
+        "level": "RED",
+        "reason": "Difficulty breathing"
+       }
+      ]
+     },
+     "model": null,
+     "ts": 1790402230.732974
+    },
+    {
+     "id": 67,
+     "encounter_id": "6a8b4fb4df63",
+     "n": 2,
+     "phase": "check",
+     "tool": "refer_to_clinician",
+     "detail": {
+      "ok": true,
+      "forced": true,
+      "feedback": "RED danger sign detected: emergency referral opened immediately, before any further reasoning.",
+      "referral": {
+       "id": "c30e3dda7bca",
+       "urgency": "RED",
+       "reason": "RED danger sign detected: emergency referral opened immediately, before any further reasoning."
+      },
+      "queued_for_sync": true
+     },
+     "model": null,
+     "ts": 1790402230.734166
+    },
+    {
+     "id": 68,
+     "encounter_id": "6a8b4fb4df63",
+     "n": 3,
+     "phase": "decide",
+     "tool": "get_patient_history",
+     "detail": {
+      "thought": "The protocol mandates an immediate RED referral due to difficulty breathing, so I must now gather history and check for respiratory rate to support the referral before finishing.",
+      "args": {}
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790402234.334644
+    },
+    {
+     "id": 69,
+     "encounter_id": "6a8b4fb4df63",
+     "n": 3,
+     "phase": "act",
+     "tool": "get_patient_history",
+     "detail": {
+      "previous_visits": []
+     },
+     "model": null,
+     "ts": 1790402234.337367
+    },
+    {
+     "id": 70,
+     "encounter_id": "6a8b4fb4df63",
+     "n": 4,
+     "phase": "decide",
+     "tool": "ask_health_worker",
+     "detail": {
+      "thought": "The protocol has already flagged this as RED and opened a referral, so I must now ask for the missing respiratory rate (rr) to confirm the severity before finalizing the referral plan.",
+      "args": {
+       "question": "Child's breathing rate (how many breaths in one minute)?",
+       "field": "rr"
+      }
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790402239.44653
+    },
+    {
+     "id": 71,
+     "encounter_id": "6a8b4fb4df63",
+     "n": 4,
+     "phase": "act",
+     "tool": "ask_health_worker",
+     "detail": {
+      "asked": "Child's breathing rate (how many breaths in one minute)?",
+      "field": "rr",
+      "status": "waiting_for_worker"
+     },
+     "model": null,
+     "ts": 1790402239.447454
+    },
+    {
+     "id": 72,
+     "encounter_id": "6a8b4fb4df63",
+     "n": 4,
+     "phase": "sense",
+     "tool": "worker_answer",
+     "detail": {
+      "question": "Child's breathing rate (how many breaths in one minute)?",
+      "answer": "55",
+      "field": "rr"
+     },
+     "model": null,
+     "ts": 1790402239.73612
+    },
+    {
+     "id": 73,
+     "encounter_id": "6a8b4fb4df63",
+     "n": 5,
+     "phase": "decide",
+     "tool": "check_danger_signs",
+     "detail": {
+      "thought": "The protocol indicates that danger signs must be checked, and since a RED referral was already opened based on the initial findings, I must now formally check the danger signs and then recommend care, even though the referral is already in place.",
+      "args": {
+       "summary": "A 2-year-old boy has had a cough and fever for three days, and his mother reports fast breathing and poor appetite."
+      }
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790402247.124204
+    },
+    {
+     "id": 74,
+     "encounter_id": "6a8b4fb4df63",
+     "n": 5,
+     "phase": "act",
+     "tool": "check_danger_signs",
+     "detail": {
+      "level": "RED",
+      "flags": [
+       {
+        "code": "fast_breathing",
+        "level": "YELLOW",
+        "reason": "RR 55.0/min ≥ 40 (age 1–5 y)"
+       },
+       {
+        "code": "difficulty_breathing",
+        "level": "RED",
+        "reason": "Difficulty breathing"
+       }
+      ]
+     },
+     "model": null,
+     "ts": 1790402247.1251042
+    },
+    {
+     "id": 75,
+     "encounter_id": "6a8b4fb4df63",
+     "n": 6,
+     "phase": "decide",
+     "tool": "recommend_care",
+     "detail": {
+      "thought": "The protocol has already mandated a RED referral, so I will now finalize the care recommendation based on the existing referral status.",
+      "args": {
+       "triage": "RED",
+       "advice_steps": [
+        "Take the child to the nearest hospital immediately.",
+        "Do not wait for the fever to come down before leaving."
+       ],
+       "advice_local_language": "తక్షణమే దగ్గరలోని ఆసుపత్రికి తీసుకెళ్లండి. జ్వరం తగ్గడం కోసం వేచి ఉండకండి.",
+       "followup_days": 0,
+       "confidence": 1.0,
+       "rationale": "The patient meets the criteria for a RED triage due to fast breathing and reported difficulty breathing."
+      }
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790402256.881773
+    },
+    {
+     "id": 76,
+     "encounter_id": "6a8b4fb4df63",
+     "n": 6,
+     "phase": "act",
+     "tool": "recommend_care",
+     "detail": {
+      "plan": {
+       "triage": "RED",
+       "advice_steps": [
+        "Take the child to the nearest hospital immediately.",
+        "Do not wait for the fever to come down before leaving."
+       ],
+       "advice_local_language": "తక్షణమే దగ్గరలోని ఆసుపత్రికి తీసుకెళ్లండి. జ్వరం తగ్గడం కోసం వేచి ఉండకండి.",
+       "followup_days": 0,
+       "confidence": 1.0,
+       "rationale": "The patient meets the criteria for a RED triage due to fast breathing and reported difficulty breathing."
+      }
+     },
+     "model": null,
+     "ts": 1790402256.883024
+    },
+    {
+     "id": 77,
+     "encounter_id": "6a8b4fb4df63",
+     "n": 7,
+     "phase": "decide",
+     "tool": "finish",
+     "detail": {
+      "thought": "The protocol has already determined the triage is RED and a referral has been opened, so the final step is to finish the visit.",
+      "args": {
+       "summary": "The patient is a 2-year-old boy with a fever (38.6°C) and fast breathing (RR 55/min) for 3 days. The triage is RED due to fast breathing and difficulty breathing. Immediate referral to the nearest hospital has been initiated."
+      }
+     },
+     "model": "gemma4:e4b-it-qat",
+     "ts": 1790402263.569659
+    },
+    {
+     "id": 78,
+     "encounter_id": "6a8b4fb4df63",
+     "n": 7,
+     "phase": "act",
+     "tool": "finish",
+     "detail": {
+      "summary": "The patient is a 2-year-old boy with a fever (38.6°C) and fast breathing (RR 55/min) for 3 days. The triage is RED due to fast breathing and difficulty breathing. Immediate referral to the nearest hospital has been initiated."
+     },
+     "model": null,
+     "ts": 1790402263.571122
+    }
+   ],
+   "handoffs": [
+    {
+     "id": "c30e3dda7bca",
+     "encounter_id": "6a8b4fb4df63",
+     "urgency": "RED",
+     "reason": "RED danger sign detected: emergency referral opened immediately, before any further reasoning.",
+     "status": "open",
+     "created_at": 1790402230.733577
+    }
+   ],
+   "followups": []
+  }
+ },
+ "visits": [
+  {
+   "id": "6a8b4fb4df63",
+   "status": "handoff",
+   "triage": "RED",
+   "degraded": 0,
+   "created_at": 1790402216.597654,
+   "name": "Aarav",
+   "age_years": 2.0
+  },
+  {
+   "id": "718aaf184c2e",
+   "status": "handoff",
+   "triage": "YELLOW",
+   "degraded": 0,
+   "created_at": 1790402119.405849,
+   "name": "Meena",
+   "age_years": 6.0
+  },
+  {
+   "id": "aed58642af41",
+   "status": "handoff",
+   "triage": "RED",
+   "degraded": 1,
+   "created_at": 1790402105.19069,
+   "name": "Sunita",
+   "age_years": 58.0
+  },
+  {
+   "id": "c64fc2ab225f",
+   "status": "done",
+   "triage": "GREEN",
+   "degraded": 0,
+   "created_at": 1790402054.938401,
+   "name": "Ramesh",
+   "age_years": 32.0
+  },
+  {
+   "id": "0e5015b99406",
+   "status": "handoff",
+   "triage": "RED",
+   "degraded": 0,
+   "created_at": 1790402022.614673,
+   "name": "Riya",
+   "age_years": 4.0
+  },
+  {
+   "id": "1d36be78dec8",
+   "status": "handoff",
+   "triage": "RED",
+   "degraded": 0,
+   "created_at": 1790401963.4236171,
+   "name": "Lakshmi",
+   "age_years": 24.0
+  }
+ ],
+ "handoffs": [
+  {
+   "id": "562a9217ad58",
+   "encounter_id": "1d36be78dec8",
+   "urgency": "RED",
+   "reason": "RED danger sign detected: emergency referral opened immediately, before any further reasoning.",
+   "status": "open",
+   "created_at": 1790401982.923552,
+   "name": "Lakshmi",
+   "age_years": 24.0
+  },
+  {
+   "id": "ce26d26eb177",
+   "encounter_id": "0e5015b99406",
+   "urgency": "RED",
+   "reason": "RED danger sign detected: emergency referral opened immediately, before any further reasoning.",
+   "status": "open",
+   "created_at": 1790402035.11569,
+   "name": "Riya",
+   "age_years": 4.0
+  },
+  {
+   "id": "b1d6faa09a88",
+   "encounter_id": "aed58642af41",
+   "urgency": "RED",
+   "reason": "RED danger sign detected: emergency referral opened immediately, before any further reasoning.",
+   "status": "open",
+   "created_at": 1790402105.193198,
+   "name": "Sunita",
+   "age_years": 58.0
+  },
+  {
+   "id": "3660e91fbdd8",
+   "encounter_id": "718aaf184c2e",
+   "urgency": "YELLOW",
+   "reason": "Signs of dehydration (sunken eyes, high HR) and persistent symptoms despite initial advice.",
+   "status": "open",
+   "created_at": 1790402154.4367979,
+   "name": "Meena",
+   "age_years": 6.0
+  },
+  {
+   "id": "c30e3dda7bca",
+   "encounter_id": "6a8b4fb4df63",
+   "urgency": "RED",
+   "reason": "RED danger sign detected: emergency referral opened immediately, before any further reasoning.",
+   "status": "open",
+   "created_at": 1790402230.733577,
+   "name": "Aarav",
+   "age_years": 2.0
+  }
+ ]
+}

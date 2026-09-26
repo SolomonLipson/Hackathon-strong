@@ -74,7 +74,8 @@ Each turn, choose exactly ONE tool:
 - refer_to_clinician {urgency, reason}: human handoff. Required for YELLOW or RED.
 - finish {summary}: close the visit when everything is done.
 
-Rules: follow the checker feedback exactly. Do not repeat a tool that already ran unless something changed. Keep "thought" to one sentence."""
+Rules: look at "progress" and "still_open" in the state: never repeat a finished step. Follow checker_feedback exactly.
+You decide HOW to do each open item (what to ask, the triage level, advice, confidence); you may also escalate triage above the protocol level when your judgment says so. Keep "thought" to one sentence."""
 
 
 def _state_view(s: AgentState) -> str:
@@ -90,6 +91,11 @@ def _state_view(s: AgentState) -> str:
         "worker_answers": s.answers,
         "plan": s.plan or "NONE",
         "referral": s.referral or "NONE",
+        "progress": {
+            "findings_extracted": bool(s.findings), "danger_signs_checked": s.rules is not None,
+            "history_loaded": s.history is not None, "plan_drafted": bool(s.plan), "referral_opened": bool(s.referral),
+        },
+        "still_open": checker.open_items(s),
         "steps_used": f"{s.step}/{config.MAX_STEPS}",
         "checker_feedback": s.last_feedback or "none",
     }
@@ -198,15 +204,18 @@ def run(s: AgentState) -> str:
 
         result = TOOLS[tool](s, args)
         s.last_feedback = ""
+        s.rejections = 0  # only consecutive rejections count toward the rules-planner switch
         store.add_step(s.encounter_id, s.step, "act", tool, result)
 
         post = checker.postcheck(s, tool, result)
         if post.get("force"):
-            forced = TOOLS[post["force"]](s, {"urgency": s.rules["level"] if s.rules else "YELLOW",
-                                             "reason": post["feedback"]})
+            urgency = max("YELLOW", (s.rules or {}).get("level", "YELLOW"), s.plan.get("triage") or "YELLOW",
+                          key=protocols.LEVELS.index)  # a handoff is never GREEN
+            forced = TOOLS[post["force"]](s, {"urgency": urgency, "reason": post["feedback"]})
             store.add_step(s.encounter_id, s.step, "check", post["force"], {"ok": True, "forced": True,
                                                                                "feedback": post["feedback"], **forced})
-            s.last_feedback = post["feedback"]
+            s.last_feedback = (post["feedback"] + " The referral is DONE (do not call refer_to_clinician again). "
+                               f"Still open: {', '.join(checker.open_items(s))}.")
 
         if s.pending_question:
             _persist(s, "needs_input")

@@ -13,6 +13,8 @@ Sahayak ("helper") supports a community health worker (ASHA) during a home visit
 
 The model never needs the internet, and the visit still completes if the model crashes.
 
+**Live demo (replay of real on-device runs):** https://solomonlipson.github.io/Hackathon-strong/
+
 > ⚠️ Demo protocol for a hackathon. This is not validated medical advice.
 
 ## Quick start (macOS/Linux, about 5 minutes plus model download)
@@ -38,7 +40,7 @@ python3 -m unittest discover -s tests
 
 ## Demo script (2 minutes)
 
-1. **Child · cough, fast breathing?** The agent extracts findings, sees a coughing 2-year-old with no breathing rate, and **pauses to ask the worker to count breaths**. Answer `55`. The rules flag fast breathing (≥40 for ages 1 to 5), the plan becomes YELLOW, and a referral is opened.
+1. **Child · cough, fast breathing?** Gemma reads "breathing fast" as difficulty breathing in a child under five, which is RED, so the **emergency referral opens instantly**. The agent then notices there is no breathing rate and **pauses to ask the worker to count breaths**. Answer `55`. The rules re-check, the plan is RED, and the advice comes in Telugu.
 2. **Pregnant · headache.** The keyword safety net and Gemma both catch *severe headache / blurred vision*, which is a RED danger sign. The **emergency referral opens instantly**, before any more model reasoning, and the agent asks for the BP.
 3. **Hinglish · bachcha behosh.** Gemma reads the Hindi-English note ("behosh" means unconscious, "pee nahi rahi" means not drinking). RED.
 4. Click **Kill model** and run **Adult · mild fever**. The trace shows a `RECOVER` step and the agent finishes in **rules-only mode**.

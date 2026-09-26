@@ -120,12 +120,13 @@ def evaluate(vitals: dict, patient: dict, findings: dict) -> dict:
         flag("hypotension", "RED", f"Systolic BP {sbp} < 90")
     if sbp is not None or dbp is not None:
         s, d = sbp or 0, dbp or 0
+        bp = f"{sbp if sbp is not None else '?'}/{dbp if dbp is not None else '?'}"
         if pregnant and (s >= 160 or d >= 110):
-            flag("severe_pre_eclampsia_bp", "RED", f"BP {s}/{d} in pregnancy")
+            flag("severe_pre_eclampsia_bp", "RED", f"BP {bp} in pregnancy")
         elif pregnant and (s >= 140 or d >= 90):
-            flag("pregnancy_hypertension", "YELLOW", f"BP {s}/{d} in pregnancy")
+            flag("pregnancy_hypertension", "YELLOW", f"BP {bp} in pregnancy")
         elif s >= 180 or d >= 120:
-            flag("hypertensive_crisis", "RED", f"BP {s}/{d}")
+            flag("hypertensive_crisis", "RED", f"BP {bp}")
 
     for sign in findings.get("danger_signs", []):
         if sign in DANGER_SIGNS:
