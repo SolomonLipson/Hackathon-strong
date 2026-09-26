@@ -1,6 +1,6 @@
-# Sahayak: an offline, voice-first triage agent for village health workers on Gemma 4
+# Sahayak: an offline Gemma 4 triage agent for village health workers
 
-**Subtitle:** A sense-decide-act-check agent that runs 100% on-device on Gemma 4 E4B/E2B. It listens to the health worker, understands English, Hindi, Telugu, and Hinglish, quotes its evidence, asks when unsure, can only escalate triage, hands off to clinicians, and keeps working when the model or the network dies.
+**Subtitle:** On-device sense-decide-act-check agent: quotes evidence, only escalates triage, hands off to clinicians, survives model and network loss
 
 **Track:** Problem Statement 5: Best Use of Gemma 4 (Local-First Agents)
 
@@ -10,18 +10,17 @@ India's ~1 million ASHA community health workers are the first point of contact 
 
 ## What we built
 
-Sahayak is a local web app: Python standard library, SQLite, and Gemma 4 through Ollama on `localhost`. There is no pip install and no CDN, and it works with Wi-Fi off. The worker **speaks or types** a note in any language (*"Bachchi ko 2 din se tez bukhar hai, behosh jaisi hai, kuch pee nahi rahi"*), adds any vitals they measured, and watches the agent work.
+Sahayak is a local web app: Python standard library, SQLite, and Gemma 4 through Ollama on `localhost`. There is no pip install and no CDN, and it works with Wi-Fi off. The worker types (or, experimentally, speaks) a note in any language (*"Bachchi ko 2 din se tez bukhar hai, behosh jaisi hai, kuch pee nahi rahi"*), adds any vitals they measured, and watches the agent work.
 
-**Gemma 4 does four jobs, all on-device:**
+**Gemma 4 does the core work on-device:**
 
-1. **Listens.** Gemma 4 E4B's native audio input turns the worker's speech into a *clean* transcript in about 2–3 s ("umm, the child has, uh, fever for, aah, three days, three days" becomes "The child has fever for 3 days"), with no cloud speech API and no separate ASR model. Recording stops by itself when the speaker pauses.
-2. **Understands.** It turns messy multilingual notes into structured findings with quoted evidence.
-3. **Plans.** It chooses the agent's next action.
-4. **Counsels.** It writes advice in Telugu or Hindi, which natural offline neural voices (Piper) read aloud.
+1. **Understands.** It turns messy multilingual notes into structured findings with quoted evidence.
+2. **Plans.** It chooses the agent's next action.
+3. **Counsels.** It writes advice in Telugu or Hindi script, which offline neural voices (Piper) can read aloud.
 
 E2B is the low-memory fallback.
 
-**Talk to Sahayak** makes the whole visit a spoken conversation. The agent greets the worker, Gemma turns their description into the visit form, and it asks aloud for anything missing. It then speaks findings, emergency referrals, and questions, takes spoken answers, and reads the family's advice in their language (enforced native script, not romanized).
+**Experimental voice mode.** Gemma 4's native audio input transcribes speech on-device, and a "Talk to Sahayak" mode runs the visit as a spoken dialogue. It works with clear speech but is not yet reliable with noisy microphones, so the typed workflow is the primary interface.
 
 ### The agent loop
 
@@ -39,7 +38,7 @@ The agent never guesses:
 - **Implausible readings.** If a vital can't be real (30 °C in a talking patient), it asks for a re-measure instead of triggering an emergency.
 - **Vague notes.** "Not sure, low energy" gets a clarifying question, and the answer is re-read by Gemma.
 
-It **hands off to a clinician** for RED, YELLOW, low confidence, repeated rejections, or an exhausted 12-step budget, with a specific reason. Every question and answer works by voice.
+It **hands off to a clinician** for RED, YELLOW, low confidence, repeated rejections, or an exhausted 12-step budget, with a specific reason.
 
 ### Offline error recovery and local state
 
@@ -78,7 +77,7 @@ The rules-only misses are exactly the cases that need clinical language understa
 
 ## Limitations and next steps
 
-The protocol is a hackathon demo and is not clinically validated. The next steps are clinician-reviewed IMCI/maternal rule sets, Android packaging with LiteRT (E2B on a phone), streaming voice, encryption at rest, and authenticated sync to the state HMIS.
+The protocol is a hackathon demo and is not clinically validated. The next steps are clinician-reviewed IMCI/maternal rule sets, Android packaging with LiteRT (E2B on a phone), robust noisy-room speech recognition, encryption at rest, and authenticated sync to the state HMIS.
 
 **Code:** https://github.com/SolomonLipson/Hackathon-strong
 **Live demo (replay of real on-device runs, no login):** https://solomonlipson.github.io/Hackathon-strong/
